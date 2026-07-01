@@ -1,0 +1,3510 @@
+﻿<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trắc nghiệm Hạ tầng mạng</title>
+<style>
+  :root{
+    --bg:#0e1419; --panel:#161e26; --panel2:#1c2730; --line:#27333d;
+    --ink:#e7eef3; --muted:#8aa0ad; --faint:#5d7280;
+    --signal:#2fd6c4; --signal-dim:#1d9c90;
+    --good:#36c98a; --good-bg:#12281f; --good-line:#1f5a40;
+    --bad:#f0656b; --bad-bg:#2a1518; --bad-line:#6b2a30;
+    --accent:#ffce5c;
+    --mono:'SFMono-Regular',ui-monospace,'JetBrains Mono','Menlo',Consolas,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{padding:18px 16px 60px;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto}
+
+  header{margin-bottom:18px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--signal)}
+  h1{font-size:23px;font-weight:700;margin:4px 0 0;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin-top:6px}
+
+  /* scoreboard */
+  .score{display:flex;gap:10px;margin:16px 0 14px;flex-wrap:wrap}
+  .stat{flex:1;min-width:84px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .stat .n{font-family:var(--mono);font-size:20px;font-weight:600;line-height:1}
+  .stat .l{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:5px}
+  .stat.correct .n{color:var(--good)}
+  .stat.wrong .n{color:var(--bad)}
+  .stat.acc .n{color:var(--signal)}
+
+  .bar{height:5px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-bottom:16px}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--signal-dim),var(--signal));transition:width .35s ease}
+
+  /* navigator */
+  .navgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-bottom:8px}
+  .navgrid button{aspect-ratio:1;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    border-radius:7px;font-family:var(--mono);font-size:11px;cursor:pointer;padding:0;transition:.12s}
+  .navgrid button:hover{border-color:var(--signal-dim);color:var(--ink)}
+  .navgrid button.cur{outline:2px solid var(--signal);outline-offset:1px;color:var(--ink)}
+  .navgrid button.ok{background:var(--good-bg);border-color:var(--good-line);color:var(--good)}
+  .navgrid button.no{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad)}
+  details.navwrap{margin-bottom:18px}
+  details.navwrap summary{cursor:pointer;color:var(--muted);font-size:12.5px;font-family:var(--mono);
+    list-style:none;padding:6px 0;user-select:none}
+  details.navwrap summary::-webkit-details-marker{display:none}
+  details.navwrap summary:before{content:"▸ ";color:var(--signal)}
+  details.navwrap[open] summary:before{content:"▾ "}
+
+  /* question card */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 18px}
+  .qhead{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .qnum{font-family:var(--mono);font-size:12px;color:var(--bg);background:var(--signal);
+    padding:3px 8px;border-radius:6px;font-weight:600}
+  .topic{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .qtext{font-size:16.5px;font-weight:600;line-height:1.45;margin-bottom:16px}
+
+  .opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;
+    background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:11px;padding:12px 13px;margin-bottom:9px;cursor:pointer;font-size:14.5px;
+    font-family:inherit;line-height:1.4;transition:.12s}
+  .opt:hover:not(:disabled){border-color:var(--signal-dim)}
+  .opt:disabled{cursor:default}
+  .opt .key{font-family:var(--mono);font-weight:600;color:var(--muted);flex:none;width:18px}
+  .opt.is-correct{background:var(--good-bg);border-color:var(--good-line)}
+  .opt.is-correct .key{color:var(--good)}
+  .opt.is-wrong{background:var(--bad-bg);border-color:var(--bad-line)}
+  .opt.is-wrong .key{color:var(--bad)}
+  .opt .mark{margin-left:auto;font-family:var(--mono);font-size:13px;flex:none}
+  .opt.is-correct .mark{color:var(--good)}
+  .opt.is-wrong .mark{color:var(--bad)}
+
+  .explain{margin-top:14px;border-radius:11px;padding:13px 14px;font-size:13.8px;line-height:1.55;
+    border:1px solid var(--line);background:#11191f;display:none}
+  .explain.show{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .explain .verdict{font-weight:700;font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+  .explain.v-ok .verdict{color:var(--good)}
+  .explain.v-no .verdict{color:var(--bad)}
+  .explain b{color:var(--accent);font-weight:600}
+
+  /* controls */
+  .controls{display:flex;gap:10px;margin-top:16px;align-items:center}
+  .controls button{font-family:inherit;font-size:14px;border-radius:10px;padding:11px 16px;cursor:pointer;
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);transition:.12s;font-weight:500}
+  .controls button:hover{border-color:var(--signal-dim)}
+  .controls button:disabled{opacity:.35;cursor:default}
+  .controls .next{margin-left:auto;background:var(--signal);color:var(--bg);border-color:var(--signal);font-weight:600}
+  .controls .next:hover{background:var(--signal-dim);border-color:var(--signal-dim)}
+
+  .toolbar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .toolbar button{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;background:transparent;
+    border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:7px 11px;cursor:pointer;transition:.12s}
+  .toolbar button:hover{color:var(--ink);border-color:var(--signal-dim)}
+
+  .done{text-align:center;padding:18px;color:var(--muted);font-size:13.5px}
+  @media(max-width:480px){
+    .navgrid{grid-template-columns:repeat(10,1fr);gap:4px}
+    .navgrid button{font-size:9.5px;border-radius:5px}
+    h1{font-size:20px}
+    .qtext{font-size:15.5px}
+  }
+
+  /* refreshed theme to match the login page */
+  :root{
+    --bg:#10131a; --panel:#fffdf8; --panel2:#f7f2e8; --line:#ddd2c1;
+    --ink:#202026; --muted:#68636c; --faint:#8c8490;
+    --signal:#2563eb; --signal-dim:#1744aa;
+    --good:#15803d; --good-bg:#eaf8ef; --good-line:#9bd8b0;
+    --bad:#b42318; --bad-bg:#fff0ed; --bad-line:#f1aaa2;
+    --accent:#f8c146; --pink:#d94686;
+    --shadow:0 22px 55px rgba(0,0,0,.22);
+  }
+  html,body{min-height:100%;color:var(--ink)}
+  body{
+    padding:28px 16px 56px;
+    background:
+      radial-gradient(circle at 12% 10%, rgba(248,193,70,.55), transparent 24%),
+      radial-gradient(circle at 88% 8%, rgba(217,70,134,.28), transparent 22%),
+      linear-gradient(135deg,#10131a 0%,#18233b 48%,#103026 100%);
+  }
+  .wrap{width:min(980px,100%);max-width:none}
+  header{
+    position:relative;overflow:hidden;margin-bottom:16px;padding:32px 34px;border-radius:8px;color:#fff;
+    border:1px solid rgba(255,255,255,.18);box-shadow:var(--shadow);
+    background:
+      linear-gradient(120deg,rgba(37,99,235,.96),rgba(16,48,38,.94)),
+      url("data:image/svg+xml,%3Csvg width='900' height='360' viewBox='0 0 900 360' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23f8c146' stroke-width='4' stroke-linecap='round' opacity='.6'%3E%3Cpath d='M80 92h150v86H80zM520 52h180v105H520zM358 226h210v96H358z'/%3E%3Cpath d='M230 132h94M520 104H402M568 274h92M155 178v78'/%3E%3Ccircle cx='80' cy='92' r='13' fill='%23f8c146'/%3E%3Ccircle cx='230' cy='178' r='13' fill='%23f8c146'/%3E%3Ccircle cx='520' cy='52' r='13' fill='%23f8c146'/%3E%3Ccircle cx='568' cy='322' r='13' fill='%23f8c146'/%3E%3C/g%3E%3C/svg%3E");
+    background-size:cover;background-position:center;
+  }
+  header:before{
+    content:"A+";display:grid;place-items:center;width:38px;height:38px;margin-bottom:18px;border-radius:8px;
+    background:var(--accent);color:#111827;font-weight:900;box-shadow:0 12px 26px rgba(0,0,0,.22);
+  }
+  .eyebrow{color:rgba(255,255,255,.76);font-weight:800}
+  h1{max-width:680px;font-size:clamp(32px,5vw,56px);line-height:1;margin:7px 0 0;letter-spacing:0;font-weight:900}
+  .sub{max-width:640px;color:rgba(255,255,255,.82);font-size:14px;margin-top:12px}
+  .score{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 14px}
+  .stat{min-width:0;background:rgba(255,253,248,.96);border:1px solid var(--line);border-radius:8px;padding:14px 15px;box-shadow:0 10px 28px rgba(0,0,0,.12)}
+  .stat .n{font-size:24px;font-weight:800;color:var(--ink)}
+  .stat .l{color:var(--faint);font-weight:800}
+  .bar{height:8px;background:rgba(255,253,248,.32);border:1px solid rgba(255,255,255,.2);border-radius:99px;margin-bottom:14px}
+  .bar > i{background:linear-gradient(90deg,var(--accent),var(--pink),var(--signal))}
+  details.navwrap{
+    margin-bottom:16px;padding:13px 14px;border:1px solid var(--line);border-radius:8px;
+    background:rgba(255,253,248,.96);box-shadow:0 10px 28px rgba(0,0,0,.12);
+  }
+  details.navwrap summary{color:var(--muted);font-weight:800}
+  details.navwrap summary:before{content:"+ ";color:var(--signal)}
+  details.navwrap[open] summary:before{content:"- "}
+  .navgrid{gap:6px;margin:12px 0 4px}
+  .navgrid button{
+    border-color:var(--line);background:var(--panel);color:var(--muted);border-radius:7px;
+    font-weight:800;transition:.14s;
+  }
+  .navgrid button:hover{border-color:var(--signal);color:var(--signal);transform:translateY(-1px)}
+  .navgrid button.cur{outline:3px solid rgba(37,99,235,.22);border-color:var(--signal);color:var(--signal);background:#eef4ff}
+  .card{background:var(--panel);border-color:var(--line);border-radius:8px;padding:24px;box-shadow:var(--shadow)}
+  .qhead{align-items:center;margin-bottom:14px}
+  .qnum{color:#111827;background:var(--accent);padding:5px 10px;border-radius:7px;font-weight:900}
+  .topic{color:var(--faint);font-weight:800}
+  .qtext{font-size:18px;font-weight:800;line-height:1.5;margin-bottom:18px;color:#191922}
+  .opt{
+    background:var(--panel2);border-color:var(--line);color:var(--ink);border-radius:8px;
+    padding:14px 15px;margin-bottom:10px;font-size:15px;line-height:1.45;
+    transition:transform .14s ease,border-color .14s ease,background .14s ease,box-shadow .14s ease;
+  }
+  .opt:hover:not(:disabled){border-color:var(--signal);background:#eef4ff;box-shadow:0 10px 22px rgba(37,99,235,.12);transform:translateY(-1px)}
+  .opt .key{
+    color:var(--signal);width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
+    background:#e8efff;font-size:12px;font-weight:900;
+  }
+  .opt.is-correct .key{color:#fff;background:var(--good)}
+  .opt.is-wrong .key{color:#fff;background:var(--bad)}
+  .opt .mark{font-size:15px;font-weight:900}
+  .explain{border-radius:8px;padding:15px 16px;font-size:14px;line-height:1.6;background:#fff9ea}
+  .explain.v-ok{background:var(--good-bg);border-color:var(--good-line)}
+  .explain.v-no{background:var(--bad-bg);border-color:var(--bad-line)}
+  .explain .verdict{font-weight:900}
+  .explain b{color:#9a5d00;font-weight:900}
+  .controls button{
+    border-radius:8px;padding:12px 16px;background:var(--panel);color:var(--ink);
+    font-weight:800;box-shadow:0 8px 18px rgba(0,0,0,.1);
+  }
+  .controls button:hover{border-color:var(--signal);color:var(--signal);transform:translateY(-1px)}
+  .controls button:disabled{transform:none}
+  .controls .next{background:var(--signal);color:#fff;border-color:var(--signal);box-shadow:0 12px 28px rgba(37,99,235,.25)}
+  .controls .next:hover{background:var(--signal-dim);border-color:var(--signal-dim);color:#fff}
+  .toolbar button{
+    background:rgba(255,253,248,.92);border-color:var(--line);border-radius:8px;
+    color:var(--muted);padding:9px 12px;font-weight:800;
+  }
+  .toolbar button:hover{color:var(--signal);border-color:var(--signal);background:#eef4ff}
+  #celebration{
+    position:fixed;inset:0;z-index:20;pointer-events:none;
+  }
+  @media(max-width:720px){
+    body{padding:16px 12px 42px}
+    header{padding:24px 22px}
+    .score{grid-template-columns:repeat(2,1fr)}
+    .card{padding:19px 16px}
+    .qtext{font-size:16px}
+  }
+  @media(max-width:480px){
+    h1{font-size:32px}
+    .stat{padding:12px}
+    .navgrid button{font-size:9px}
+    .controls{align-items:stretch}
+    .controls button{flex:1;padding-inline:12px}
+  }
+
+  /* fantasy RPG skin */
+  :root{
+    --bg:#091322; --panel:rgba(255,250,235,.94); --panel2:rgba(239,248,249,.88); --line:rgba(183,131,53,.34);
+    --ink:#1d2634; --muted:#65707e; --faint:#87909c;
+    --signal:#2b83c6; --signal-dim:#186178;
+    --good:#17835d; --good-bg:#e6f8ed; --good-line:#93d9af;
+    --bad:#b8373f; --bad-bg:#fff0ef; --bad-line:#efaaa7;
+    --accent:#f7d58a; --pink:#e783b3; --aqua:#56d6c6;
+    --shadow:0 32px 82px rgba(0,0,0,.36);
+  }
+  html,body{background:var(--bg)}
+  body{
+    position:relative;isolation:isolate;overflow-x:hidden;
+    background:
+      linear-gradient(125deg,rgba(9,19,34,.98),rgba(31,54,104,.94),rgba(20,75,76,.9)),
+      repeating-linear-gradient(60deg,rgba(247,213,138,.055) 0 1px,transparent 1px 86px);
+    background-size:180% 180%,auto;
+    animation:skyShift 18s ease-in-out infinite;
+  }
+  body:before,
+  body:after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  }
+  body:before{
+    opacity:.72;
+    background-image:
+      radial-gradient(circle,rgba(255,255,255,.82) 0 1px,transparent 1.4px),
+      radial-gradient(circle,rgba(247,213,138,.7) 0 1px,transparent 1.7px);
+    background-size:92px 92px,137px 137px;
+    background-position:0 0,28px 52px;
+    animation:starDrift 30s linear infinite;
+  }
+  body:after{
+    opacity:.28;filter:blur(18px);
+    background:
+      conic-gradient(from 45deg at 18% 24%,transparent 0 18%,rgba(86,214,198,.32) 21%,transparent 28% 100%),
+      conic-gradient(from 220deg at 80% 78%,transparent 0 12%,rgba(247,213,138,.26) 16%,transparent 24% 100%);
+    animation:auroraSweep 16s ease-in-out infinite alternate;
+  }
+  .wrap{animation:riseIn .7s cubic-bezier(.2,.8,.2,1) both}
+  header{
+    border-color:rgba(247,213,138,.62);
+    box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.08) inset;
+    background:
+      linear-gradient(135deg,rgba(8,19,36,.3),rgba(10,23,44,.76)),
+      url("data:image/svg+xml,%3Csvg width='980' height='390' viewBox='0 0 980 390' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='980' height='390' fill='%2317294f'/%3E%3Cg fill='none' stroke='%23f7d58a' stroke-width='3' stroke-linecap='round' opacity='.68'%3E%3Cpath d='M490 56l42 74 84 18-57 64 9 87-78-35-78 35 9-87-57-64 84-18z'/%3E%3Cpath d='M86 98h164v92H86zM660 74h210v110H660zM384 272h240v82H384z'/%3E%3Cpath d='M250 144h98M660 128H528M384 313H248M164 190v96M624 313h92'/%3E%3C/g%3E%3Cg fill='%2356d6c6' opacity='.2'%3E%3Cpath d='M56 64l25 15-25 15-25-15zM890 284l36 21-36 21-36-21z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size:cover;background-position:center;
+  }
+  header:after{
+    content:"";position:absolute;inset:-45%;
+    background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.23) 50%,transparent 58%);
+    transform:translateX(-55%);
+    animation:lightBlade 6.4s ease-in-out infinite;
+  }
+  header>*{position:relative;z-index:1}
+  header:before{
+    background:linear-gradient(135deg,#fff6cc,var(--accent),#d89a3d);
+    box-shadow:0 0 24px rgba(247,213,138,.44),0 12px 24px rgba(0,0,0,.22);
+    animation:crestPulse 2.8s ease-in-out infinite;
+  }
+  h1{text-shadow:0 4px 24px rgba(0,0,0,.34),0 0 28px rgba(247,213,138,.18)}
+  .sub span[style*="--good"]{color:#8ef0ba!important}
+  .sub span[style*="--bad"]{color:#ffb4bd!important}
+  .score{perspective:900px}
+  .stat{
+    position:relative;overflow:hidden;
+    background:linear-gradient(180deg,rgba(255,252,241,.96),rgba(231,246,250,.9));
+    border-color:rgba(247,213,138,.48);
+    box-shadow:0 16px 38px rgba(0,0,0,.18),0 1px 0 rgba(255,255,255,.9) inset;
+    transition:transform .18s ease,box-shadow .18s ease;
+  }
+  .stat:before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(120deg,transparent 0 40%,rgba(255,255,255,.42) 50%,transparent 60% 100%);
+    transform:translateX(-120%);
+    transition:transform .6s ease;
+  }
+  .stat:hover{transform:translateY(-3px) rotateX(2deg);box-shadow:0 22px 46px rgba(0,0,0,.24),0 0 24px rgba(247,213,138,.16)}
+  .stat:hover:before{transform:translateX(120%)}
+  .bar{
+    height:10px;border-color:rgba(247,213,138,.36);background:rgba(255,250,235,.28);
+    box-shadow:0 8px 24px rgba(0,0,0,.18) inset;
+  }
+  .bar>i{
+    background:linear-gradient(90deg,var(--accent),var(--aqua),var(--pink),var(--signal));
+    background-size:220% 100%;
+    animation:progressFlow 3s linear infinite;
+    box-shadow:0 0 18px rgba(86,214,198,.38);
+  }
+  details.navwrap,
+  .card{
+    border-color:rgba(247,213,138,.5);
+    background:
+      linear-gradient(180deg,rgba(255,252,241,.97),rgba(232,246,250,.92)),
+      repeating-linear-gradient(135deg,rgba(183,131,53,.08) 0 1px,transparent 1px 44px);
+    box-shadow:var(--shadow),0 1px 0 rgba(255,255,255,.9) inset;
+  }
+  details.navwrap[open]{animation:softOpen .26s ease both}
+  .navgrid button{
+    border-color:rgba(183,131,53,.28);background:rgba(255,253,247,.92);
+    box-shadow:0 1px 0 rgba(255,255,255,.86) inset;
+  }
+  .navgrid button:hover{
+    border-color:var(--aqua);color:#176a78;background:#edfafa;
+    box-shadow:0 0 18px rgba(86,214,198,.18);
+  }
+  .navgrid button.cur{
+    border-color:var(--accent);color:#8a5a12;background:#fff6d8;
+    outline:3px solid rgba(247,213,138,.26);
+  }
+  .card{position:relative;overflow:hidden;animation:cardArrival .28s ease both}
+  .card:before{
+    content:"";position:absolute;inset:9px;border:1px solid rgba(183,131,53,.22);border-radius:6px;pointer-events:none;
+  }
+  .qnum{
+    background:linear-gradient(135deg,#fff6cc,var(--accent),#d99b3d);
+    box-shadow:0 8px 18px rgba(183,131,53,.2),0 0 16px rgba(247,213,138,.28);
+  }
+  .topic{color:#7c6b91}
+  .qtext{color:#17233a;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+  .opt{
+    position:relative;overflow:hidden;
+    background:rgba(255,253,247,.84);border-color:rgba(183,131,53,.28);
+    box-shadow:0 8px 20px rgba(16,30,58,.08),0 1px 0 rgba(255,255,255,.88) inset;
+  }
+  .opt:before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(110deg,transparent 0 38%,rgba(255,255,255,.42) 50%,transparent 62% 100%);
+    transform:translateX(-120%);
+    transition:transform .5s ease;
+  }
+  .opt:hover:not(:disabled){
+    border-color:var(--aqua);background:#edfafa;
+    box-shadow:0 16px 32px rgba(21,102,124,.16),0 0 20px rgba(86,214,198,.18);
+  }
+  .opt:hover:not(:disabled):before{transform:translateX(120%)}
+  .opt .key{
+    background:linear-gradient(135deg,#e9fbff,#d9f0ff);
+    color:#176a78;border:1px solid rgba(86,214,198,.28);
+  }
+  .opt.is-correct{
+    animation:answerPop .36s cubic-bezier(.2,.9,.25,1) both;
+    box-shadow:0 0 0 1px rgba(23,131,93,.18),0 16px 34px rgba(23,131,93,.18);
+  }
+  .opt.is-wrong{animation:wrongShake .26s ease both}
+  .explain{
+    box-shadow:0 12px 28px rgba(0,0,0,.08),0 1px 0 rgba(255,255,255,.84) inset;
+  }
+  .controls button,
+  .toolbar button{
+    position:relative;overflow:hidden;border-color:rgba(247,213,138,.52);
+    box-shadow:0 12px 28px rgba(0,0,0,.14),0 1px 0 rgba(255,255,255,.88) inset;
+  }
+  .controls button:before,
+  .toolbar button:before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(110deg,transparent 0 36%,rgba(255,255,255,.45) 48%,transparent 62% 100%);
+    transform:translateX(-120%);
+    transition:transform .55s ease;
+  }
+  .controls button:hover:before,
+  .toolbar button:hover:before{transform:translateX(120%)}
+  .controls .next{
+    background:linear-gradient(135deg,#21798c,#2563eb 50%,#8a5bc8);
+    border-color:rgba(247,213,138,.7);
+    box-shadow:0 16px 34px rgba(37,99,235,.28),0 0 24px rgba(86,214,198,.16);
+  }
+  .controls .next:hover{
+    background:linear-gradient(135deg,#198596,#1744aa 52%,#7244b4);
+    box-shadow:0 20px 42px rgba(37,99,235,.34),0 0 34px rgba(247,213,138,.24);
+  }
+
+  @keyframes skyShift{
+    0%,100%{background-position:0% 50%,0 0}
+    50%{background-position:100% 50%,0 0}
+  }
+  @keyframes starDrift{
+    from{background-position:0 0,28px 52px}
+    to{background-position:92px 184px,165px 326px}
+  }
+  @keyframes auroraSweep{
+    from{transform:translate3d(-2%,-1%,0) scale(1)}
+    to{transform:translate3d(2%,1%,0) scale(1.05)}
+  }
+  @keyframes riseIn{
+    from{opacity:0;transform:translateY(18px) scale(.985)}
+    to{opacity:1;transform:none}
+  }
+  @keyframes lightBlade{
+    0%,52%{transform:translateX(-55%);opacity:0}
+    62%{opacity:.8}
+    78%,100%{transform:translateX(55%);opacity:0}
+  }
+  @keyframes crestPulse{
+    0%,100%{transform:translateY(0);filter:brightness(1)}
+    50%{transform:translateY(-2px);filter:brightness(1.12)}
+  }
+  @keyframes progressFlow{
+    from{background-position:0% 50%}
+    to{background-position:220% 50%}
+  }
+  @keyframes softOpen{
+    from{transform:translateY(-3px);filter:brightness(.98)}
+    to{transform:none;filter:brightness(1)}
+  }
+  @keyframes cardArrival{
+    from{opacity:.72;transform:translateY(8px)}
+    to{opacity:1;transform:none}
+  }
+  @keyframes answerPop{
+    0%{transform:scale(.992)}
+    55%{transform:scale(1.012)}
+    100%{transform:scale(1)}
+  }
+  @keyframes wrongShake{
+    0%,100%{transform:translateX(0)}
+    35%{transform:translateX(-4px)}
+    70%{transform:translateX(4px)}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{
+      animation-duration:.001ms!important;
+      animation-iteration-count:1!important;
+      scroll-behavior:auto!important;
+    }
+  }
+</style>
+
+<canvas id="celebration" aria-hidden="true"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Học phần · Hạ tầng mạng</div>
+    <h1>Trắc nghiệm ôn tập — <span id="total-title">350</span> câu</h1>
+    <div class="sub">Chọn một đáp án để xem ngay <span style="color:var(--good)">đúng</span> / <span style="color:var(--bad)">sai</span> kèm giải thích. Tiến độ được tính tự động.</div>
+  </header>
+
+  <div class="score">
+    <div class="stat"><div class="n" id="s-done">0<span style="color:var(--faint);font-size:13px">/350</span></div><div class="l">Đã làm</div></div>
+    <div class="stat correct"><div class="n" id="s-ok">0</div><div class="l">Đúng</div></div>
+    <div class="stat wrong"><div class="n" id="s-no">0</div><div class="l">Sai</div></div>
+    <div class="stat acc"><div class="n" id="s-acc">—</div><div class="l">Chính xác</div></div>
+  </div>
+
+  <div class="bar"><i id="prog"></i></div>
+
+  <details class="navwrap">
+    <summary id="navlabel">Mở bảng câu hỏi (nhảy nhanh)</summary>
+    <div class="navgrid" id="navgrid"></div>
+  </details>
+
+  <div class="card" id="card"></div>
+
+  <div class="controls">
+    <button id="prev">← Trước</button>
+    <button class="next" id="next">Tiếp →</button>
+  </div>
+
+  <div class="toolbar">
+    <button id="jumpWrong">⤷ Câu sai tiếp theo</button>
+    <button id="jumpUnans">⤷ Câu chưa làm</button>
+    <button id="reset">↺ Làm lại & xáo câu</button>
+  </div>
+</div>
+
+<script>
+const TOPICS = ["Chuyển mạch & Ethernet","STP & EtherChannel","DHCP","Định tuyến tĩnh & cơ bản","OSPF","VLAN, Trunk & Liên VLAN","ACL, NAT & Bảo mật cơ bản","Troubleshooting tổng hợp","Subnetting & VLSM","Router-on-a-stick & SVI","ACL & NAT nâng cao","OSPF mở rộng","Troubleshooting & dịch vụ mạng"];
+function topicOf(i){return TOPICS[Math.min(Math.floor(i/20), TOPICS.length-1)];}
+
+// ans: 0=A 1=B 2=C 3=D
+const Q = [
+{
+"q": "Khi một switch Cisco khởi động, thành phần nào chịu trách nhiệm tìm và nạp hệ điều hành IOS từ bộ nhớ flash?",
+"o": [
+"Boot loader",
+"POST",
+"NVRAM",
+"Running-config"
+],
+"a": 0,
+"e": "Sau khi POST kiểm tra phần cứng, <b>boot loader</b> mới là thứ tìm và nạp IOS từ flash. NVRAM chỉ lưu startup-config, còn running-config nằm trong RAM."
+},
+{
+"q": "Quản trị viên muốn kiểm tra trạng thái vật lý và trạng thái giao thức của các cổng Ethernet trên router. Lệnh nào phù hợp nhất?",
+"o": [
+"show ip route",
+"show interfaces",
+"show vlan brief",
+"show version"
+],
+"a": 1,
+"e": "<b>show interfaces</b> hiển thị cả trạng thái vật lý (up/down) lẫn line protocol của cổng. show ip route xem bảng định tuyến, show version xem IOS/phần cứng."
+},
+{
+"q": "Giao thức nào nên được ưu tiên dùng để quản trị thiết bị mạng từ xa vì có cơ chế mã hóa phiên làm việc?",
+"o": [
+"Telnet",
+"FTP",
+"SSH",
+"TFTP"
+],
+"a": 2,
+"e": "<b>SSH</b> mã hóa toàn bộ phiên quản trị. Telnet, FTP, TFTP đều truyền dữ liệu dạng rõ (plaintext), không an toàn."
+},
+{
+"q": "Trong Ethernet, switch học địa chỉ MAC của thiết bị đầu cuối dựa vào thông tin nào trong frame đi vào cổng switch?",
+"o": [
+"Số VLAN native",
+"Địa chỉ MAC đích",
+"Địa chỉ IP nguồn",
+"Địa chỉ MAC nguồn"
+],
+"a": 3,
+"e": "Switch học bằng cách đọc <b>MAC nguồn</b> của frame đi vào và gắn nó với cổng nhận. MAC đích chỉ dùng để quyết định chuyển tiếp."
+},
+{
+"q": "Một cổng switch ở chế độ full-duplex có đặc điểm nào?",
+"o": [
+"Có thể truyền và nhận dữ liệu đồng thời",
+"Chỉ truyền dữ liệu theo một chiều tại một thời điểm",
+"Luôn tạo ra va chạm trên đường truyền",
+"Chỉ dùng được với cáp chéo"
+],
+"a": 0,
+"e": "<b>Full-duplex</b> cho phép gửi và nhận cùng lúc, không xảy ra va chạm. Một chiều tại một thời điểm là đặc điểm của half-duplex."
+},
+{
+"q": "Địa chỉ nào được switch sử dụng chủ yếu để quyết định chuyển tiếp frame ở Layer 2?",
+"o": [
+"Địa chỉ IP nguồn",
+"Địa chỉ MAC đích",
+"Địa chỉ IP đích",
+"Cổng TCP đích"
+],
+"a": 1,
+"e": "Ở Layer 2, switch tra <b>MAC đích</b> trong bảng MAC để biết chuyển frame ra cổng nào. IP và cổng TCP là thông tin Layer 3/4."
+},
+{
+"q": "Trong cấu hình thiết bị Cisco, lệnh nào thường được dùng để lưu cấu hình đang chạy vào cấu hình khởi động?",
+"o": [
+"reload",
+"show startup-config",
+"copy running-config startup-config",
+"erase startup-config"
+],
+"a": 2,
+"e": "<b>copy running-config startup-config</b> chép cấu hình từ RAM vào NVRAM để giữ lại sau khi khởi động lại."
+},
+{
+"q": "Một frame Ethernet có kích thước nhỏ hơn kích thước tối thiểu hợp lệ thường được gọi là gì?",
+"o": [
+"Giant frame",
+"Native frame",
+"Tagged frame",
+"Runt frame"
+],
+"a": 3,
+"e": "Frame nhỏ hơn 64 byte gọi là <b>runt</b>. Frame lớn hơn mức tối đa cho phép gọi là giant."
+},
+{
+"q": "Một switch nhận frame unicast có địa chỉ MAC đích chưa có trong bảng MAC. Switch sẽ xử lý frame như thế nào?",
+"o": [
+"Gửi frame ra tất cả các cổng, trừ cổng nhận vào",
+"Loại bỏ frame ngay lập tức",
+"Chỉ gửi frame về default gateway",
+"Chuyển frame sang broadcast IP"
+],
+"a": 0,
+"e": "Đây là <b>unknown unicast</b>: switch flood frame ra mọi cổng trong VLAN, trừ cổng nhận vào, để tìm thiết bị đích."
+},
+{
+"q": "Công nghệ auto-MDIX trên switch giúp giải quyết vấn đề nào trong quá trình kết nối thiết bị?",
+"o": [
+"Tự động chọn cổng trunk",
+"Tự động điều chỉnh kiểu cáp thẳng hoặc cáp chéo",
+"Tự động cấp địa chỉ IP cho PC",
+"Tự động tạo VLAN quản trị"
+],
+"a": 1,
+"e": "<b>Auto-MDIX</b> tự dò và hoán đổi chân tín hiệu, nên không cần phân biệt cáp thẳng (straight-through) hay cáp chéo (crossover)."
+},
+{
+"q": "Một switch dùng phương pháp store-and-forward. Đặc điểm nào mô tả đúng phương pháp này?",
+"o": [
+"Chuyển frame ngay sau khi đọc MAC đích",
+"Không dùng FCS để phát hiện lỗi",
+"Kiểm tra toàn bộ frame trước khi chuyển tiếp",
+"Chỉ hoạt động với cổng half-duplex"
+],
+"a": 2,
+"e": "<b>Store-and-forward</b> nhận trọn frame, kiểm tra FCS để bắt lỗi rồi mới chuyển — độ trễ cao hơn nhưng tin cậy hơn. Chuyển ngay sau khi đọc MAC đích là cut-through."
+},
+{
+"q": "Trong mạng LAN, VLAN giúp giải quyết vấn đề nào?",
+"o": [
+"Loại bỏ nhu cầu sử dụng địa chỉ MAC",
+"Gộp tất cả các cổng vào cùng một miền quảng bá",
+"Thay thế hoàn toàn chức năng định tuyến",
+"Tăng số lượng miền quảng bá bằng cách phân tách mạng logic"
+],
+"a": 3,
+"e": "<b>VLAN</b> chia một switch vật lý thành nhiều miền quảng bá (broadcast domain) logic, giúp tách biệt và quản lý lưu lượng tốt hơn."
+},
+{
+"q": "Một switch Layer 2 được thêm vào mạng. Phát biểu nào đúng nhất?",
+"o": [
+"Mỗi cổng switch có thể tạo miền va chạm riêng",
+"Switch luôn chặn mọi gói broadcast",
+"Switch làm cho toàn mạng chỉ còn một cổng logic",
+"Switch không học địa chỉ MAC"
+],
+"a": 0,
+"e": "Switch <b>chia miền va chạm theo từng cổng</b> (microsegmentation). Nó vẫn học MAC và vẫn chuyển tiếp broadcast trong cùng VLAN."
+},
+{
+"q": "Nếu hai đầu của một liên kết Ethernet cấu hình duplex không khớp nhau, hiện tượng nào có thể xuất hiện?",
+"o": [
+"VLAN tự động bị xóa",
+"Va chạm muộn và hiệu năng giảm",
+"Router ID bị thay đổi",
+"STP bị vô hiệu hóa"
+],
+"a": 1,
+"e": "<b>Duplex mismatch</b> gây late collision, lỗi khung và giảm throughput đáng kể — một lỗi cấu hình kinh điển."
+},
+{
+"q": "Lệnh nào thường được dùng để xem phiên bản IOS, thời gian hoạt động của thiết bị và thông tin phần cứng cơ bản?",
+"o": [
+"show interfaces trunk",
+"show mac address-table",
+"show version",
+"show ip ospf neighbor"
+],
+"a": 2,
+"e": "<b>show version</b> hiển thị phiên bản IOS, uptime, thông tin phần cứng và config register."
+},
+{
+"q": "Một doanh nghiệp có nhiều máy trạm gửi dữ liệu nội bộ trong cùng VLAN. Thiết kế nào giúp giảm tắc nghẽn tốt hơn so với dùng hub?",
+"o": [
+"Đưa toàn bộ máy vào một cổng trunk",
+"Dùng hub có tốc độ cao hơn nhưng vẫn chung miền va chạm",
+"Tắt bảng MAC trên switch",
+"Dùng switch để chia nhỏ miền va chạm theo từng cổng"
+],
+"a": 3,
+"e": "<b>Switch</b> tạo miền va chạm riêng cho mỗi cổng, trong khi hub khiến mọi thiết bị chung một miền va chạm → switch giảm tắc nghẽn tốt hơn hẳn."
+},
+{
+"q": "Một quản trị viên muốn giảm độ trễ chuyển mạch và chấp nhận rủi ro chuyển tiếp frame lỗi. Phương pháp chuyển mạch nào phù hợp?",
+"o": [
+"Cut-through",
+"Store-and-forward",
+"Fragment-free only",
+"Process switching"
+],
+"a": 0,
+"e": "<b>Cut-through</b> chuyển frame ngay khi đọc xong MAC đích → độ trễ thấp nhất, nhưng có thể chuyển luôn cả frame lỗi vì chưa kịp kiểm FCS."
+},
+{
+"q": "Trong trường hợp switch phải xử lý lưu lượng giữa các cổng có tốc độ khác nhau, thành phần nào hỗ trợ lưu tạm frame để giảm rớt gói khi nghẽn?",
+"o": [
+"Bảng định tuyến",
+"Bộ đệm frame",
+"Router ID",
+"ACL chuẩn"
+],
+"a": 1,
+"e": "<b>Bộ đệm frame (buffer)</b> lưu tạm frame khi cổng đích bận hoặc tốc độ chênh lệch, giúp giảm rớt gói khi nghẽn."
+},
+{
+"q": "Một quản trị viên cần phân biệt lưu lượng quản trị switch với lưu lượng người dùng. Cách tổ chức nào hợp lý nhất?",
+"o": [
+"Dùng chung mật khẩu console cho tất cả VLAN",
+"Tắt toàn bộ VLAN mặc định",
+"Đặt địa chỉ quản trị trên VLAN quản trị riêng",
+"Chỉ dùng địa chỉ MAC để quản trị"
+],
+"a": 2,
+"e": "Đặt địa chỉ quản trị trên một <b>VLAN quản trị riêng</b> giúp tách lưu lượng điều khiển thiết bị khỏi lưu lượng người dùng, an toàn hơn."
+},
+{
+"q": "Một switch nhận frame broadcast trong VLAN 20. Switch sẽ chuyển tiếp frame đó như thế nào?",
+"o": [
+"Loại bỏ vì broadcast không được phép trong VLAN",
+"Ra tất cả các VLAN đang có trên switch",
+"Chỉ ra cổng trunk native VLAN",
+"Ra tất cả các cổng thuộc VLAN 20, trừ cổng nhận vào"
+],
+"a": 3,
+"e": "Broadcast bị giới hạn trong phạm vi VLAN của nó: flood ra <b>mọi cổng thuộc VLAN 20</b>, trừ cổng đã nhận frame."
+},
+{
+"q": "Mục tiêu chính của STP trong mạng switch Layer 2 có đường dự phòng là gì?",
+"o": [
+"Ngăn vòng lặp Layer 2",
+"Cấp phát địa chỉ IP tự động",
+"Mã hóa dữ liệu trên đường truyền",
+"Chọn default gateway cho router"
+],
+"a": 0,
+"e": "<b>STP</b> chặn (block) các đường dự phòng để loại bỏ vòng lặp Layer 2 — nguyên nhân gây broadcast storm."
+},
+{
+"q": "Trong STP, switch nào được xem là trung tâm logic của cây spanning tree?",
+"o": [
+"Access switch",
+"Root bridge",
+"DHCP server",
+"Default router"
+],
+"a": 1,
+"e": "<b>Root bridge</b> là gốc và trung tâm logic của cây; mọi đường đi tốt nhất đều tính theo hướng về root."
+},
+{
+"q": "Bridge ID trong STP được tạo từ bridge priority, địa chỉ MAC và thành phần nào khác?",
+"o": [
+"Router ID",
+"Default gateway",
+"Extended system ID",
+"TCP port"
+],
+"a": 2,
+"e": "Bridge ID = bridge priority (4 bit) + <b>extended system ID</b> (12 bit, mang VLAN) + địa chỉ MAC."
+},
+{
+"q": "Trong PVST+, extended system ID thường mang thông tin nào?",
+"o": [
+"Địa chỉ broadcast",
+"Địa chỉ IP host",
+"Số cổng TCP",
+"ID VLAN"
+],
+"a": 3,
+"e": "PVST+ chạy một instance STP cho mỗi VLAN, nên extended system ID mang chính <b>VLAN ID</b>."
+},
+{
+"q": "PortFast nên được bật trên loại cổng nào?",
+"o": [
+"Cổng kết nối trực tiếp đến máy trạm",
+"Cổng trunk nối giữa hai switch",
+"Cổng uplink đến core switch",
+"Cổng đang bị shutdown"
+],
+"a": 0,
+"e": "<b>PortFast</b> chỉ nên bật ở cổng access nối tới end device, để bỏ qua listening/learning và vào forwarding ngay. Bật trên trunk/uplink rất dễ gây loop."
+},
+{
+"q": "Nếu tất cả switch giữ priority mặc định, tiêu chí nào thường quyết định root bridge?",
+"o": [
+"Địa chỉ IP cao nhất",
+"Địa chỉ MAC thấp nhất",
+"Cổng có tốc độ thấp nhất",
+"Số VLAN nhiều nhất"
+],
+"a": 1,
+"e": "Khi priority bằng nhau, switch có <b>địa chỉ MAC thấp nhất</b> sẽ thắng và trở thành root bridge."
+},
+{
+"q": "Vai trò cổng nào trên non-root bridge có đường tốt nhất đi về root bridge?",
+"o": [
+"Blocked port",
+"Designated port",
+"Root port",
+"Disabled port"
+],
+"a": 2,
+"e": "<b>Root port</b> là cổng có path cost thấp nhất hướng về root, mỗi non-root bridge chỉ có đúng một root port."
+},
+{
+"q": "EtherChannel dùng để làm gì trong mạng switch?",
+"o": [
+"Thay thế giao thức OSPF",
+"Chia địa chỉ IP cho máy trạm",
+"Tạo bảng định tuyến động",
+"Gộp nhiều liên kết vật lý thành một liên kết logic"
+],
+"a": 3,
+"e": "<b>EtherChannel</b> bó nhiều liên kết vật lý thành một port-channel logic, tăng băng thông và tạo dự phòng, đồng thời STP coi đó là một liên kết duy nhất."
+},
+{
+"q": "Một cổng switch được cấu hình PortFast nhưng lại nối sang switch khác. Rủi ro chính là gì?",
+"o": [
+"Có thể tạo vòng lặp Layer 2 trước khi STP hội tụ",
+"Không thể học địa chỉ MAC",
+"Không thể truyền frame unicast",
+"Router sẽ mất bảng định tuyến"
+],
+"a": 0,
+"e": "PortFast bỏ qua các bước trung gian của STP, nên nếu nối vào switch khác, cổng vào forwarding ngay và có thể <b>tạo loop trước khi STP kịp hội tụ</b>."
+},
+{
+"q": "Trong STP, cổng designated có vai trò nào trên một phân đoạn mạng?",
+"o": [
+"Luôn bị chặn để tránh loop",
+"Chuyển tiếp lưu lượng cho phân đoạn đó về phía root bridge",
+"Chỉ dùng để quản trị qua SSH",
+"Chỉ nhận BPDU nhưng không gửi BPDU"
+],
+"a": 1,
+"e": "<b>Designated port</b> là cổng forwarding cho một phân đoạn — mỗi segment có đúng một designated port chịu trách nhiệm chuyển lưu lượng."
+},
+{
+"q": "Một switch có hai đường đến root bridge. STP sẽ ưu tiên đường nào?",
+"o": [
+"Đường dùng cáp chéo",
+"Đường có số VLAN ít hơn",
+"Đường có tổng path cost thấp hơn",
+"Đường có địa chỉ IP cao hơn"
+],
+"a": 2,
+"e": "STP chọn root port theo <b>tổng path cost nhỏ nhất</b> về root bridge (cost phụ thuộc băng thông liên kết)."
+},
+{
+"q": "Nếu tắt STP trong mạng có nhiều liên kết dự phòng giữa các switch, hậu quả nào dễ xảy ra nhất?",
+"o": [
+"NAT ngừng hoạt động",
+"DHCP lease ngắn hơn",
+"OSPF mất router ID",
+"Broadcast storm"
+],
+"a": 3,
+"e": "Không có STP, frame broadcast lặp vô hạn qua các liên kết dự phòng → <b>broadcast storm</b> làm tê liệt mạng."
+},
+{
+"q": "Khi cấu hình EtherChannel, điều kiện nào cần nhất quán giữa các cổng thành viên?",
+"o": [
+"Speed, duplex, VLAN/trunk mode",
+"Địa chỉ IP của từng PC",
+"Mật khẩu console",
+"Tên host của switch"
+],
+"a": 0,
+"e": "Các cổng thành viên phải đồng nhất <b>speed, duplex và cấu hình VLAN/trunk</b>; nếu lệch, cổng sẽ không được đưa vào bó EtherChannel."
+},
+{
+"q": "Giao thức nào cho phép tự động thương lượng EtherChannel trên thiết bị Cisco?",
+"o": [
+"ARP",
+"PAgP",
+"ICMP",
+"DNS"
+],
+"a": 1,
+"e": "<b>PAgP</b> là giao thức thương lượng EtherChannel độc quyền của Cisco; LACP là tương đương theo chuẩn mở (IEEE 802.3ad)."
+},
+{
+"q": "Một liên kết trunk có native VLAN không khớp ở hai đầu. Vấn đề nào có thể xảy ra?",
+"o": [
+"DHCP chuyển sang dùng IPv6",
+"Router tự động đổi địa chỉ IP",
+"Lưu lượng không gắn thẻ có thể bị đưa sai VLAN",
+"STP tự động tắt toàn bộ cổng"
+],
+"a": 2,
+"e": "Native VLAN mismatch khiến lưu lượng untagged bị hiểu nhầm sang VLAN khác (VLAN leaking), gây lỗi và cảnh báo bảo mật."
+},
+{
+"q": "Một mạng có root bridge đặt ở access layer thay vì distribution/core layer. Nhận định nào hợp lý nhất?",
+"o": [
+"Cần thay STP bằng DHCP",
+"Không ảnh hưởng vì root bridge chỉ là khái niệm hình thức",
+"Cần tắt toàn bộ trunk",
+"Đường đi Layer 2 có thể không tối ưu, cần điều chỉnh bridge priority"
+],
+"a": 3,
+"e": "Root nên nằm ở core/distribution. Đặt nhầm ở access layer khiến <b>đường đi Layer 2 không tối ưu</b>; nên chỉnh bridge priority để root về đúng vị trí."
+},
+{
+"q": "Hai switch cấu hình EtherChannel nhưng một bên dùng LACP active, bên còn lại để chế độ on. Kết quả có thể là gì?",
+"o": [
+"EtherChannel không hình thành đúng do chế độ không tương thích",
+"Liên kết tự động chuyển sang STP root",
+"Tất cả VLAN bị xóa",
+"Cổng chuyển thành routed port"
+],
+"a": 0,
+"e": "Chế độ <b>on</b> không gửi gói thương lượng, trong khi LACP active chờ thương lượng → hai bên không tương thích, EtherChannel không hình thành (dễ gây loop)."
+},
+{
+"q": "Một cổng STP ở trạng thái alternate có ý nghĩa gì?",
+"o": [
+"Cổng đang nhận DHCP",
+"Đường dự phòng đến root bridge, không chuyển tiếp dữ liệu ở trạng thái bình thường",
+"Cổng luôn là root port",
+"Cổng chuyên dùng cho console"
+],
+"a": 1,
+"e": "<b>Alternate port</b> là đường dự phòng tới root, ở trạng thái blocking; nó sẽ tiếp quản nếu root port hiện tại hỏng."
+},
+{
+"q": "Khi một liên kết trong EtherChannel bị lỗi nhưng còn các liên kết thành viên khác hoạt động, điều gì thường xảy ra?",
+"o": [
+"VLAN tự động chuyển sang native",
+"Toàn bộ switch phải khởi động lại",
+"Port-channel vẫn hoạt động với băng thông giảm",
+"STP tắt tất cả cổng access"
+],
+"a": 2,
+"e": "Ưu điểm của EtherChannel: mất một link thì <b>port-channel vẫn chạy</b> trên các link còn lại, chỉ giảm băng thông, không gián đoạn STP."
+},
+{
+"q": "Muốn chủ động chọn một switch làm root bridge cho VLAN 10, cách cấu hình hợp lý là gì?",
+"o": [
+"Tắt toàn bộ BPDU trên switch",
+"Đặt địa chỉ IP cao hơn",
+"Tăng số lượng cổng access",
+"Đặt bridge priority của switch đó thấp hơn các switch còn lại"
+],
+"a": 3,
+"e": "Bridge priority <b>thấp nhất</b> thắng bầu chọn root. Thường dùng <code>spanning-tree vlan 10 root primary</code> hoặc đặt priority thủ công."
+},
+{
+"q": "Bản tin đầu tiên mà DHCP client thường gửi khi cần xin địa chỉ IPv4 là gì?",
+"o": [
+"DHCPDISCOVER",
+"DHCPOFFER",
+"DHCPACK",
+"DHCPNAK"
+],
+"a": 0,
+"e": "Client mở đầu bằng <b>DHCPDISCOVER</b> (broadcast) để tìm DHCP server. Đây là chữ D trong tiến trình DORA."
+},
+{
+"q": "DHCP server dùng bản tin nào để đề nghị thông số địa chỉ IP cho client?",
+"o": [
+"DHCPREQUEST",
+"DHCPOFFER",
+"DHCPACK",
+"ARP reply"
+],
+"a": 1,
+"e": "Server đáp lại Discover bằng <b>DHCPOFFER</b>, đề nghị một địa chỉ IP cùng các tham số (mask, gateway, DNS...)."
+},
+{
+"q": "Client gửi bản tin nào để chấp nhận địa chỉ được DHCP server đề nghị?",
+"o": [
+"DHCPOFFER",
+"DHCPACK",
+"DHCPREQUEST",
+"ICMP Echo"
+],
+"a": 2,
+"e": "Client gửi <b>DHCPREQUEST</b> để chính thức yêu cầu/chấp nhận địa chỉ trong offer mà nó chọn."
+},
+{
+"q": "Bản tin nào xác nhận client được sử dụng địa chỉ IP đã cấp?",
+"o": [
+"DNS query",
+"DHCPDISCOVER",
+"DHCPREQUEST",
+"DHCPACK"
+],
+"a": 3,
+"e": "<b>DHCPACK</b> là bước cuối của DORA: server xác nhận client được dùng địa chỉ và lease bắt đầu có hiệu lực."
+},
+{
+"q": "Cổng UDP nào thường được DHCP server sử dụng?",
+"o": [
+"67",
+"68",
+"80",
+"443"
+],
+"a": 0,
+"e": "DHCP server lắng nghe trên <b>UDP 67</b>, client dùng UDP 68."
+},
+{
+"q": "Cổng UDP nào thường được DHCP client sử dụng?",
+"o": [
+"67",
+"68",
+"23",
+"25"
+],
+"a": 1,
+"e": "DHCP client dùng <b>UDP 68</b>, server dùng UDP 67."
+},
+{
+"q": "Một máy Windows nhận địa chỉ 169.254.x.x thường cho thấy điều gì?",
+"o": [
+"Đã nhận default gateway công cộng",
+"Đã kết nối VPN thành công",
+"Không nhận được địa chỉ từ DHCP server",
+"Đang dùng NAT tĩnh"
+],
+"a": 2,
+"e": "Dải <b>169.254.x.x là APIPA</b>: máy tự gán khi không liên lạc được DHCP server. Đây là dấu hiệu DHCP thất bại."
+},
+{
+"q": "Lệnh `ip address dhcp` trên giao diện router có tác dụng gì?",
+"o": [
+"Xóa địa chỉ IP khỏi giao diện",
+"Biến router thành DHCP relay",
+"Tạo DHCP pool mới",
+"Cho phép giao diện nhận địa chỉ IP từ DHCP server"
+],
+"a": 3,
+"e": "<b>ip address dhcp</b> biến giao diện router thành DHCP client, tự nhận IP từ server (thường dùng ở cổng WAN nối ISP)."
+},
+{
+"q": "Một client và DHCP server nằm ở hai subnet khác nhau. Thiết bị nào thường cần cấu hình để chuyển tiếp yêu cầu DHCP?",
+"o": [
+"DHCP relay agent",
+"DNS resolver",
+"STP root bridge",
+"NTP server"
+],
+"a": 0,
+"e": "DHCPDISCOVER là broadcast, không qua router. Cần <b>DHCP relay agent</b> để chuyển yêu cầu sang server ở subnet khác."
+},
+{
+"q": "Lệnh nào thường được cấu hình trên giao diện router để chuyển tiếp DHCP request đến server ở mạng khác?",
+"o": [
+"ip route dhcp",
+"ip helper-address",
+"service password-encryption",
+"switchport access vlan"
+],
+"a": 1,
+"e": "<b>ip helper-address &lt;IP server&gt;</b> đặt trên giao diện hướng client, biến router thành relay chuyển DHCP broadcast thành unicast tới server."
+},
+{
+"q": "Vì sao DHCPDISCOVER thường được gửi dạng broadcast?",
+"o": [
+"Client đã có default gateway",
+"Server luôn nằm cùng VLAN native",
+"Client chưa biết địa chỉ của DHCP server",
+"DHCP không dùng UDP"
+],
+"a": 2,
+"e": "Lúc này client chưa có IP và <b>chưa biết server ở đâu</b>, nên phải broadcast để mọi server trong mạng đều nghe được."
+},
+{
+"q": "Trong quá trình xin địa chỉ ban đầu, thứ tự bản tin DHCPv4 nào là đúng?",
+"o": [
+"Ack, Request, Offer, Discover",
+"Offer, Discover, Ack, Request",
+"Request, Discover, Offer, Ack",
+"Discover, Offer, Request, Ack"
+],
+"a": 3,
+"e": "Đúng thứ tự <b>D-O-R-A</b>: Discover → Offer → Request → Ack."
+},
+{
+"q": "Một DHCP pool loại trừ các địa chỉ từ 192.168.10.1 đến 192.168.10.20 trong mạng /24. Mục đích của thao tác này là gì?",
+"o": [
+"Không cấp phát các địa chỉ dành riêng cho thiết bị tĩnh",
+"Tăng TTL của gói DHCP",
+"Tạo VLAN mới",
+"Tắt dịch vụ DNS"
+],
+"a": 0,
+"e": "Lệnh excluded-address giữ lại các IP đó cho <b>thiết bị cấu hình tĩnh</b> (router, server, máy in...) để tránh trùng địa chỉ."
+},
+{
+"q": "Nếu một router không dây dùng DHCP client ở cổng WAN, điều đó thường có nghĩa là gì?",
+"o": [
+"Router cấp phát địa chỉ cho ISP",
+"Cổng WAN nhận địa chỉ IP từ ISP hoặc thiết bị upstream",
+"Tất cả cổng LAN bị shutdown",
+"Router tắt NAT"
+],
+"a": 1,
+"e": "Cổng WAN làm DHCP client nghĩa là nó <b>nhận IP công cộng từ ISP</b> hoặc thiết bị upstream, trong khi vẫn cấp DHCP cho mạng LAN bên trong."
+},
+{
+"q": "Một client đã nhận nhiều DHCPOFFER. Khi gửi DHCPREQUEST dạng broadcast, mục đích phụ là gì?",
+"o": [
+"Cấu hình STP root bridge",
+"Yêu cầu DNS xóa bản ghi",
+"Thông báo server được chọn và gián tiếp từ chối các đề nghị khác",
+"Xác nhận địa chỉ MAC của switch"
+],
+"a": 2,
+"e": "REQUEST broadcast ghi rõ server được chọn (server identifier), nhờ đó <b>các server bị từ chối</b> biết để thu hồi địa chỉ đã offer."
+},
+{
+"q": "Một doanh nghiệp triển khai DHCP tập trung tại data center cho nhiều VLAN chi nhánh. Thiết kế nào phù hợp nhất?",
+"o": [
+"Chỉ dùng địa chỉ APIPA",
+"Đặt DHCP server tại mỗi máy trạm",
+"Tắt routing giữa các VLAN",
+"Cấu hình DHCP relay trên gateway của từng VLAN"
+],
+"a": 3,
+"e": "Đặt <b>ip helper-address (relay)</b> trên gateway mỗi VLAN cho phép một DHCP server trung tâm phục vụ tất cả VLAN."
+},
+{
+"q": "Client nhận được địa chỉ IP nhưng không truy cập được mạng ngoài subnet. Tham số DHCP nào cần kiểm tra đầu tiên?",
+"o": [
+"Default gateway",
+"Địa chỉ MAC của switch",
+"Bridge priority",
+"OSPF cost"
+],
+"a": 0,
+"e": "Có IP nhưng không ra khỏi subnet là dấu hiệu <b>default gateway sai/thiếu</b> — tham số cần kiểm tra trước tiên."
+},
+{
+"q": "Một DHCP server hết địa chỉ trong pool. Triệu chứng nào có khả năng xảy ra ở client mới?",
+"o": [
+"Client tự thành DNS server",
+"Client không nhận được lease hợp lệ",
+"Switch chuyển sang trunk",
+"Router tự bật OSPF"
+],
+"a": 1,
+"e": "Hết địa chỉ trong pool → server không còn gì để cấp, client mới <b>không nhận được lease</b> và thường rơi về APIPA."
+},
+{
+"q": "Khi hợp đồng thuê DHCP sắp hết hạn, client thường cố gắng làm gì trước khi lease hết hiệu lực?",
+"o": [
+"Tắt giao diện loopback",
+"Xóa bảng MAC của switch",
+"Gia hạn lease với DHCP server",
+"Chuyển sang STP blocking"
+],
+"a": 2,
+"e": "Khi đến mốc T1 (~50% lease), client chủ động <b>gia hạn (renew)</b> với server để tiếp tục giữ địa chỉ."
+},
+{
+"q": "Trong một mạng có nhiều DHCP server không kiểm soát, rủi ro bảo mật nào có thể xuất hiện?",
+"o": [
+"EtherChannel tự giải thể",
+"STP tự động tắt root bridge",
+"IPv6 không thể sử dụng link-local",
+"Client nhận default gateway hoặc DNS sai từ DHCP giả mạo"
+],
+"a": 3,
+"e": "<b>Rogue DHCP server</b> có thể cấp gateway/DNS giả để chặn hoặc nghe lén lưu lượng (man-in-the-middle). DHCP snooping được dùng để chống lại."
+},
+{
+"q": "Tuyến mặc định IPv4 thường được biểu diễn bằng mạng đích nào?",
+"o": [
+"0.0.0.0/0",
+"127.0.0.0/8",
+"169.254.0.0/16",
+"224.0.0.0/4"
+],
+"a": 0,
+"e": "<b>0.0.0.0/0</b> khớp mọi đích, dùng làm default route (gateway of last resort)."
+},
+{
+"q": "Khái niệm nào cho biết độ tin cậy của nguồn tuyến đường khi router có nhiều tuyến đến cùng đích?",
+"o": [
+"Metric Ethernet",
+"Administrative distance",
+"VLAN ID",
+"PortFast"
+],
+"a": 1,
+"e": "<b>Administrative distance (AD)</b> đo độ tin cậy của nguồn tuyến; AD càng thấp càng được ưu tiên (Connected 0, Static 1, OSPF 110...)."
+},
+{
+"q": "Trong bảng định tuyến, ký hiệu C thường chỉ loại tuyến nào?",
+"o": [
+"Tuyến RIP",
+"Tuyến OSPF",
+"Mạng kết nối trực tiếp",
+"Tuyến tĩnh"
+],
+"a": 2,
+"e": "Ký hiệu <b>C = Connected</b>: mạng kết nối trực tiếp vào giao diện router."
+},
+{
+"q": "Trong bảng định tuyến Cisco, ký hiệu S thường chỉ loại tuyến nào?",
+"o": [
+"BGP route",
+"Connected route",
+"OSPF route",
+"Static route"
+],
+"a": 3,
+"e": "Ký hiệu <b>S = Static</b>: tuyến tĩnh do quản trị viên cấu hình thủ công."
+},
+{
+"q": "Ưu điểm thường gặp của định tuyến động so với định tuyến tĩnh là gì?",
+"o": [
+"Có thể tự thích nghi khi topology thay đổi",
+"Không cần tài nguyên router",
+"Không cần cấu hình ban đầu",
+"Luôn an toàn hơn mọi tuyến tĩnh"
+],
+"a": 0,
+"e": "Định tuyến động <b>tự cập nhật khi topology thay đổi</b> (link hỏng, thêm mạng), nhưng tốn tài nguyên CPU/băng thông hơn tuyến tĩnh."
+},
+{
+"q": "Tuyến tĩnh nổi (floating static) thường có đặc điểm nào?",
+"o": [
+"Metric luôn bằng 0",
+"Administrative distance cao hơn tuyến chính",
+"Chỉ dùng cho mạng kết nối trực tiếp",
+"Không thể dùng với default route"
+],
+"a": 1,
+"e": "Floating static có <b>AD cao hơn tuyến chính</b>, nên chỉ được cài vào bảng định tuyến khi tuyến chính biến mất — đóng vai trò dự phòng."
+},
+{
+"q": "Tuyến mặc định IPv6 thường được biểu diễn bằng tiền tố nào?",
+"o": [
+"FE80::/10",
+"::1/128",
+"::/0",
+"FF00::/8"
+],
+"a": 2,
+"e": "<b>::/0</b> là default route IPv6. FE80::/10 là link-local, ::1/128 là loopback, FF00::/8 là multicast."
+},
+{
+"q": "Gateway of last resort dùng để làm gì?",
+"o": [
+"Bầu chọn DR/BDR",
+"Cấp phát địa chỉ IP cho client",
+"Tạo VLAN native",
+"Chuyển tiếp gói khi không có tuyến cụ thể hơn"
+],
+"a": 3,
+"e": "<b>Gateway of last resort</b> là next-hop của default route, dùng khi không có tuyến nào cụ thể hơn khớp với gói."
+},
+{
+"q": "Một router có tuyến OSPF AD 110 và tuyến tĩnh cùng đích AD 1. Tuyến nào được cài vào bảng định tuyến?",
+"o": [
+"Tuyến tĩnh",
+"Tuyến OSPF",
+"Cả hai luôn cân bằng tải",
+"Không tuyến nào"
+],
+"a": 0,
+"e": "AD thấp hơn thắng: <b>tuyến tĩnh (AD 1)</b> được cài thay vì OSPF (AD 110)."
+},
+{
+"q": "Muốn tuyến tĩnh chỉ hoạt động khi tuyến OSPF bị mất, cần đặt AD của tuyến tĩnh như thế nào?",
+"o": [
+"Nhỏ hơn AD của OSPF",
+"Lớn hơn AD của OSPF",
+"Bằng 0",
+"Bằng địa chỉ next-hop"
+],
+"a": 1,
+"e": "Đặt AD tĩnh <b>lớn hơn 110</b> (ví dụ 120) → đây là floating static, chỉ kích hoạt khi tuyến OSPF biến mất."
+},
+{
+"q": "Một tuyến tĩnh được chỉ định đầy đủ (fully specified) thường bao gồm những thông tin nào?",
+"o": [
+"Router ID và bridge priority",
+"Tên VLAN và domain DNS",
+"Giao diện thoát và địa chỉ next-hop",
+"Địa chỉ MAC nguồn và đích"
+],
+"a": 2,
+"e": "Tuyến tĩnh fully specified gồm cả <b>exit interface và next-hop IP</b>, giúp router xác định rõ đường ra, tránh mơ hồ trên mạng multi-access."
+},
+{
+"q": "Trên mạng multi-access Ethernet, chỉ cấu hình tuyến tĩnh bằng giao diện thoát có thể gây vấn đề gì?",
+"o": [
+"VLAN bị xóa",
+"STP tắt cổng trunk",
+"DHCP không cấp lease",
+"Router cần phân giải ARP cho nhiều đích, dễ tăng xử lý"
+],
+"a": 3,
+"e": "Trên Ethernet, chỉ ghi exit-interface khiến router coi mọi đích nằm trực tiếp trên link và phải <b>ARP cho từng đích</b> → tốn xử lý. Nên kèm next-hop."
+},
+{
+"q": "Metric trong định tuyến động được dùng để làm gì?",
+"o": [
+"So sánh và chọn đường tốt nhất trong cùng một giao thức định tuyến",
+"Xác định mật khẩu console",
+"Đánh số VLAN",
+"Tạo địa chỉ MAC"
+],
+"a": 0,
+"e": "<b>Metric</b> được dùng để chọn đường tốt nhất giữa nhiều tuyến của <b>cùng một giao thức</b> (so sánh khác giao thức thì dùng AD)."
+},
+{
+"q": "Một mạng stub chỉ có một đường ra ngoài. Giải pháp định tuyến đơn giản thường phù hợp là gì?",
+"o": [
+"Chạy nhiều giao thức định tuyến đồng thời",
+"Default static route",
+"Tắt định tuyến",
+"Chỉ dùng STP"
+],
+"a": 1,
+"e": "Mạng stub chỉ có một lối ra nên không cần định tuyến động phức tạp — một <b>default static route</b> là đủ và gọn nhẹ."
+},
+{
+"q": "Lệnh `ip route 192.168.20.0 255.255.255.0 10.1.1.2` tạo loại cấu hình nào?",
+"o": [
+"ACL chuẩn",
+"DHCP pool",
+"Tuyến tĩnh dùng next-hop",
+"OSPF network statement"
+],
+"a": 2,
+"e": "Đây là một <b>tuyến tĩnh</b> tới mạng 192.168.20.0/24 qua next-hop 10.1.1.2."
+},
+{
+"q": "Router A cần đi đến LAN 192.168.30.0/24 qua next-hop 10.0.0.2. Lệnh nào đúng?",
+"o": [
+"router ospf 192.168.30.0",
+"ip route 10.0.0.2 255.255.255.0 192.168.30.0",
+"ip default-gateway 192.168.30.0 10.0.0.2",
+"ip route 192.168.30.0 255.255.255.0 10.0.0.2"
+],
+"a": 3,
+"e": "Cú pháp đúng: <b>ip route &lt;mạng đích&gt; &lt;mask&gt; &lt;next-hop&gt;</b> → ip route 192.168.30.0 255.255.255.0 10.0.0.2."
+},
+{
+"q": "Một doanh nghiệp có liên kết Internet chính và phụ. Muốn link phụ chỉ chạy khi link chính lỗi, cấu hình nào hợp lý?",
+"o": [
+"Floating static route với AD cao hơn tuyến chính",
+"Hai tuyến mặc định có AD bằng nhau",
+"Tắt cổng link phụ",
+"Đổi native VLAN của link phụ"
+],
+"a": 0,
+"e": "<b>Floating static route (AD cao hơn)</b> cho link phụ: chỉ được cài vào bảng định tuyến khi tuyến chính mất → dự phòng tự động."
+},
+{
+"q": "Host A gửi dữ liệu đến server ở mạng khác. Khung Ethernet đầu tiên từ Host A sẽ có MAC đích là gì?",
+"o": [
+"MAC của server đích",
+"MAC của default gateway",
+"MAC của DNS server",
+"MAC broadcast FFFF.FFFF.FFFF"
+],
+"a": 1,
+"e": "Đích khác mạng nên frame đầu tiên gửi tới <b>MAC của default gateway</b>; IP đích vẫn là của server. MAC sẽ thay đổi qua từng chặng router."
+},
+{
+"q": "Một gói tin đi qua nhiều router. Trường địa chỉ nào giữ nguyên từ nguồn đến đích nếu không xét NAT?",
+"o": [
+"Cổng switch nhận vào",
+"Địa chỉ MAC nguồn và MAC đích",
+"Địa chỉ IP nguồn và IP đích",
+"Bridge ID"
+],
+"a": 2,
+"e": "<b>IP nguồn và IP đích</b> giữ nguyên suốt hành trình (khi không NAT). Còn MAC nguồn/đích bị viết lại tại mỗi router."
+},
+{
+"q": "Khi có hai tuyến đến cùng mạng từ hai giao thức khác nhau, router Cisco trước tiên so sánh giá trị nào?",
+"o": [
+"Port priority",
+"VLAN ID",
+"Hello interval",
+"Administrative distance"
+],
+"a": 3,
+"e": "Khác giao thức → router so sánh <b>administrative distance</b> trước; chỉ khi cùng giao thức mới so sánh metric."
+},
+{
+"q": "OSPF thuộc nhóm giao thức định tuyến nào?",
+"o": [
+"Link-state",
+"Distance-vector cổ điển",
+"Path-vector",
+"Static-only"
+],
+"a": 0,
+"e": "<b>OSPF là link-state</b>: mỗi router xây dựng bản đồ topology đầy đủ (LSDB) rồi tính đường bằng thuật toán SPF."
+},
+{
+"q": "Gói Hello trong OSPF dùng để làm gì?",
+"o": [
+"Cấp phát địa chỉ IP",
+"Phát hiện láng giềng và duy trì quan hệ láng giềng",
+"Mã hóa mật khẩu",
+"Gộp liên kết vật lý"
+],
+"a": 1,
+"e": "<b>Hello</b> dùng để khám phá neighbor, bầu DR/BDR và duy trì quan hệ láng giềng (keepalive)."
+},
+{
+"q": "Cơ sở dữ liệu nào trong OSPF chứa thông tin trạng thái liên kết của một area?",
+"o": [
+"ARP cache",
+"MAC table",
+"LSDB",
+"DHCP pool"
+],
+"a": 2,
+"e": "<b>LSDB</b> (Link-State Database) lưu toàn bộ thông tin trạng thái liên kết của area; các router trong cùng area có LSDB đồng nhất."
+},
+{
+"q": "Thuật toán nào được OSPF dùng để tính đường đi tốt nhất?",
+"o": [
+"RSA",
+"Bellman-Ford chỉ theo hop count",
+"CSMA/CD",
+"SPF/Dijkstra"
+],
+"a": 3,
+"e": "OSPF dùng thuật toán <b>SPF (Dijkstra)</b> trên LSDB để tính cây đường ngắn nhất tới mọi đích."
+},
+{
+"q": "Một area OSPF gồm các router có điểm chung nào?",
+"o": [
+"Có cùng thông tin link-state trong LSDB của area đó",
+"Có cùng địa chỉ MAC",
+"Có cùng mật khẩu console",
+"Có cùng số VLAN native"
+],
+"a": 0,
+"e": "Router trong cùng một area chia sẻ <b>LSDB giống hệt nhau</b>; đây là cơ sở để mọi router tính SPF nhất quán."
+},
+{
+"q": "Router ID trong OSPF có dạng nào?",
+"o": [
+"Địa chỉ MAC 48-bit",
+"Số 32-bit định dạng giống địa chỉ IPv4",
+"Chuỗi domain DNS",
+"Số VLAN 12-bit"
+],
+"a": 1,
+"e": "Router ID là số <b>32-bit, viết dạng giống IPv4</b> (ví dụ 1.1.1.1), dùng để nhận diện router trong miền OSPF."
+},
+{
+"q": "Giá trị priority OSPF mặc định trên nhiều router Cisco là bao nhiêu?",
+"o": [
+"10",
+"0",
+"1",
+"255"
+],
+"a": 2,
+"e": "Priority OSPF mặc định là <b>1</b>. Priority càng cao càng dễ trúng DR; priority 0 thì không tham gia bầu chọn."
+},
+{
+"q": "Khi priority OSPF của một router trên mạng multi-access là 0, router đó có đặc điểm nào?",
+"o": [
+"Tự động tắt OSPF",
+"Luôn trở thành DR",
+"Luôn trở thành BDR",
+"Không tham gia bầu chọn DR/BDR"
+],
+"a": 3,
+"e": "Priority <b>0</b> loại router khỏi cuộc bầu chọn — nó không bao giờ làm DR hay BDR, chỉ làm DROTHER."
+},
+{
+"q": "Hai giá trị nào phải khớp để hai router OSPF hình thành quan hệ láng giềng ổn định trên cùng liên kết?",
+"o": [
+"Hello interval và dead interval",
+"Hostname và banner MOTD",
+"VLAN native và VLAN voice",
+"Địa chỉ MAC nguồn và đích"
+],
+"a": 0,
+"e": "<b>Hello và Dead interval</b> phải khớp (cùng area, cùng subnet, cùng kiểu xác thực...) thì neighbor mới ổn định."
+},
+{
+"q": "Trên mạng Ethernet multi-access chạy OSPF, vì sao cần DR/BDR?",
+"o": [
+"Cấp phát IPv4 cho client",
+"Giảm số lượng quan hệ láng giềng đầy đủ và lưu lượng LSA",
+"Tạo EtherChannel",
+"Thay thế default route"
+],
+"a": 1,
+"e": "DR/BDR giảm số adjacency đầy đủ từ n(n-1)/2 xuống còn quan hệ với DR/BDR, nhờ đó <b>giảm lưu lượng LSA</b> trên mạng multi-access."
+},
+{
+"q": "Lệnh `router ospf 10` có số 10 biểu thị điều gì?",
+"o": [
+"Administrative distance",
+"Area ID bắt buộc",
+"Process ID cục bộ trên router",
+"Số VLAN"
+],
+"a": 2,
+"e": "Số 10 là <b>process ID cục bộ</b>, chỉ có ý nghĩa trên chính router đó — không cần giống nhau giữa các router để chạy OSPF."
+},
+{
+"q": "Wildcard mask nào tương ứng với subnet mask 255.255.255.0?",
+"o": [
+"255.255.0.0",
+"255.255.255.0",
+"0.0.255.255",
+"0.0.0.255"
+],
+"a": 3,
+"e": "Wildcard = đảo bit của subnet mask. 255.255.255.0 → <b>0.0.0.255</b>."
+},
+{
+"q": "Câu lệnh nào quảng bá mạng 192.168.5.0/24 vào area 0?",
+"o": [
+"network 192.168.5.0 0.0.0.255 area 0",
+"network 192.168.5.0 255.255.255.0 area 0",
+"ip route 192.168.5.0 0.0.0.255 area 0",
+"ospf network 192.168.5.0/24"
+],
+"a": 0,
+"e": "Cú pháp OSPF dùng <b>wildcard mask</b>: network 192.168.5.0 0.0.0.255 area 0 (không dùng subnet mask)."
+},
+{
+"q": "Nếu router OSPF chưa cấu hình router-id thủ công, router sẽ ưu tiên chọn gì trước?",
+"o": [
+"Địa chỉ MAC thấp nhất",
+"Địa chỉ IP cao nhất trên loopback đang hoạt động",
+"VLAN ID lớn nhất",
+"Địa chỉ IP default gateway"
+],
+"a": 1,
+"e": "Thứ tự chọn: router-id thủ công → <b>IP cao nhất trên loopback active</b> → IP cao nhất trên giao diện vật lý active."
+},
+{
+"q": "Gói OSPF nào mô tả tóm tắt nội dung LSDB trong quá trình đồng bộ láng giềng?",
+"o": [
+"BPDU",
+"DHCPACK",
+"DBD",
+"ARP request"
+],
+"a": 2,
+"e": "<b>DBD (Database Description)</b> tóm tắt nội dung LSDB để hai neighbor so sánh và đồng bộ cơ sở dữ liệu."
+},
+{
+"q": "Một router OSPF thay đổi router ID nhưng láng giềng vẫn thấy ID cũ. Hành động nào thường làm ID mới có hiệu lực?",
+"o": [
+"Tắt PortFast",
+"Đổi VLAN native",
+"Xóa DHCP pool",
+"Khởi động lại tiến trình OSPF hoặc reload router"
+],
+"a": 3,
+"e": "Router ID chỉ được chốt lúc tiến trình khởi tạo. Cần <b>clear ip ospf process</b> (hoặc reload) thì ID mới mới có hiệu lực."
+},
+{
+"q": "Hai router OSPF cùng subnet nhưng không trở thành láng giềng. Nguyên nhân nào rất đáng kiểm tra?",
+"o": [
+"Hello/dead interval không khớp",
+"Cả hai đều dùng SSH",
+"Cả hai đều có MAC khác nhau",
+"Cả hai đều dùng cáp thẳng"
+],
+"a": 0,
+"e": "<b>Hello/Dead interval lệch nhau</b> là một trong các nguyên nhân kinh điển khiến OSPF không lập được neighbor (cùng với area, subnet, MTU, xác thực...)."
+},
+{
+"q": "Một router cần quảng bá chính xác mạng 10.10.10.0/24 vào OSPF mà không bao gồm 10.10.11.0/24. Wildcard nào phù hợp?",
+"o": [
+"0.0.1.255",
+"0.0.0.255",
+"0.0.255.255",
+"255.255.255.0"
+],
+"a": 1,
+"e": "<b>0.0.0.255</b> khớp đúng /24 (10.10.10.0–10.10.10.255). Dùng 0.0.1.255 sẽ gộp cả 10.10.11.0/24."
+},
+{
+"q": "Trong cùng một area OSPF đã hội tụ, bảng định tuyến của các router có nhất thiết giống hệt nhau không?",
+"o": [
+"Không router nào có bảng định tuyến",
+"Có, luôn giống từng dòng",
+"Không, vì vị trí router khác nhau có thể tạo next-hop và đường đi khác nhau",
+"Chỉ DR mới có bảng định tuyến"
+],
+"a": 2,
+"e": "LSDB thì giống nhau, nhưng <b>bảng định tuyến khác nhau</b> vì mỗi router tính SPF từ vị trí của riêng mình → next-hop và đường đi riêng."
+},
+{
+"q": "Một mạng OSPF được chia nhiều area. Lợi ích chính của thiết kế phân cấp này là gì?",
+"o": [
+"Loại bỏ mọi tuyến mặc định",
+"Tắt hoàn toàn LSDB",
+"Không cần router ID",
+"Giảm phạm vi lan truyền thay đổi topology và tối ưu tính toán SPF"
+],
+"a": 3,
+"e": "Chia area giúp <b>giới hạn phạm vi lan truyền LSA</b> khi topology thay đổi và giảm tải tính SPF — mở rộng (scale) mạng OSPF tốt hơn."
+},
+{
+"q": "Khi cấu hình VLAN trên switch Cisco, lệnh nào tạo VLAN 30 và đặt tên là SALES?",
+"o": [
+"interface vlan 30; name SALES",
+"vlan 30; name SALES",
+"switchport vlan 30 SALES",
+"ip vlan 30 name SALES"
+],
+"a": 1,
+"e": "Tạo VLAN ở global configuration bằng <b>vlan 30</b>, sau đó đặt tên bằng <b>name SALES</b>. interface vlan 30 là SVI dùng cho quản trị/định tuyến, không phải lệnh tạo tên VLAN."
+},
+{
+"q": "Một cổng switch nối trực tiếp với PC nên được cấu hình ở chế độ nào?",
+"o": [
+"Access port",
+"Trunk port",
+"Routed port",
+"Monitor port"
+],
+"a": 0,
+"e": "Cổng nối PC thường là <b>access port</b>, thuộc một VLAN duy nhất. Trunk dùng để mang nhiều VLAN giữa switch-router hoặc switch-switch."
+},
+{
+"q": "Lệnh nào gán cổng switch vào VLAN 20 ở chế độ access?",
+"o": [
+"switchport trunk native vlan 20",
+"switchport access vlan 20",
+"ip address vlan 20",
+"encapsulation dot1q 20"
+],
+"a": 1,
+"e": "Trên interface của switch Layer 2, dùng <b>switchport mode access</b> và <b>switchport access vlan 20</b> để gán cổng vào VLAN 20."
+},
+{
+"q": "Liên kết trunk 802.1Q có nhiệm vụ chính là gì?",
+"o": [
+"Chỉ truyền duy nhất VLAN native",
+"Mã hóa toàn bộ frame Ethernet",
+"Mang lưu lượng của nhiều VLAN trên cùng một liên kết vật lý",
+"Cấp IP tự động cho các VLAN"
+],
+"a": 2,
+"e": "<b>802.1Q trunk</b> cho phép một đường vật lý mang nhiều VLAN bằng cách gắn thẻ VLAN vào frame Ethernet."
+},
+{
+"q": "Trong 802.1Q, VLAN nào thường đi qua trunk mà không bị gắn thẻ?",
+"o": [
+"Native VLAN",
+"Voice VLAN",
+"Management VLAN",
+"Blackhole VLAN"
+],
+"a": 0,
+"e": "<b>Native VLAN</b> là VLAN được truyền không tag trên trunk 802.1Q. Vì vậy hai đầu trunk phải khớp native VLAN để tránh lỗi."
+},
+{
+"q": "Lệnh nào kiểm tra các cổng trunk đang hoạt động và VLAN được phép đi qua trunk?",
+"o": [
+"show interfaces trunk",
+"show ip ospf neighbor",
+"show dhcp lease",
+"show access-lists"
+],
+"a": 0,
+"e": "<b>show interfaces trunk</b> hiển thị cổng trunk, native VLAN, VLAN allowed và VLAN đang forwarding trên trunk."
+},
+{
+"q": "Router-on-a-stick dùng để làm gì?",
+"o": [
+"Gộp nhiều router thành một router logic",
+"Định tuyến giữa nhiều VLAN bằng một cổng vật lý router chia thành subinterface",
+"Tạo EtherChannel giữa router và switch",
+"Cấp phát địa chỉ MAC cho máy trạm"
+],
+"a": 1,
+"e": "<b>Router-on-a-stick</b> dùng một cổng vật lý router, chia thành nhiều subinterface 802.1Q để định tuyến liên VLAN."
+},
+{
+"q": "Trong router-on-a-stick, lệnh nào chỉ định subinterface xử lý VLAN 10?",
+"o": [
+"switchport access vlan 10",
+"encapsulation dot1Q 10",
+"vlan database 10",
+"ip helper-address 10"
+],
+"a": 1,
+"e": "Trên subinterface router, dùng <b>encapsulation dot1Q 10</b> để nhận frame được tag VLAN 10."
+},
+{
+"q": "SVI trên switch Layer 3 có vai trò gì?",
+"o": [
+"Cổng console ảo",
+"Giao diện VLAN logic có thể làm default gateway cho VLAN",
+"Bảng MAC dự phòng",
+"Cổng trunk vật lý"
+],
+"a": 1,
+"e": "<b>SVI</b> (interface vlan X) là giao diện Layer 3 logic của VLAN, thường dùng làm default gateway cho host trong VLAN đó trên switch L3."
+},
+{
+"q": "Để switch Layer 3 định tuyến giữa các VLAN, ngoài tạo SVI và gán IP, cần bật lệnh nào?",
+"o": [
+"ip routing",
+"spanning-tree portfast",
+"service password-encryption",
+"switchport nonegotiate"
+],
+"a": 0,
+"e": "Switch Layer 3 cần bật <b>ip routing</b> để chuyển tiếp gói giữa các SVI/VLAN. Nếu không bật, SVI chỉ dùng quản trị cơ bản."
+},
+{
+"q": "Nếu PC ở VLAN 10 ping được gateway VLAN 10 nhưng không ping được PC ở VLAN 20, lỗi nào đáng kiểm tra nhất?",
+"o": [
+"Cáp console bị sai",
+"Inter-VLAN routing hoặc ACL giữa VLAN có vấn đề",
+"Địa chỉ MAC của PC quá dài",
+"STP không có root bridge"
+],
+"a": 1,
+"e": "Ping được gateway cùng VLAN chứng tỏ access/VLAN cục bộ ổn. Không sang VLAN khác thì cần kiểm tra <b>inter-VLAN routing</b>, gateway VLAN 20, route hoặc ACL."
+},
+{
+"q": "DTP trong môi trường Cisco dùng để làm gì?",
+"o": [
+"Tự động thương lượng trunk giữa các switch",
+"Cấp DHCP qua nhiều subnet",
+"Bầu chọn DR/BDR trong OSPF",
+"Mã hóa SSH"
+],
+"a": 0,
+"e": "<b>DTP</b> (Dynamic Trunking Protocol) thương lượng trunk. Trong môi trường cần an toàn, thường đặt mode thủ công và dùng switchport nonegotiate."
+},
+{
+"q": "Vì sao không nên dùng VLAN 1 làm VLAN quản trị trong mạng thực tế?",
+"o": [
+"VLAN 1 không truyền được broadcast",
+"VLAN 1 là mặc định, dễ bị lạm dụng và khó kiểm soát bảo mật",
+"VLAN 1 chỉ hỗ trợ IPv6",
+"VLAN 1 không học được MAC"
+],
+"a": 1,
+"e": "VLAN 1 là VLAN mặc định cho nhiều giao thức và cổng mới, nên dùng làm quản trị sẽ <b>kém an toàn</b>. Nên tạo VLAN quản trị riêng."
+},
+{
+"q": "Voice VLAN thường được dùng trong tình huống nào?",
+"o": [
+"Tách lưu lượng điện thoại IP khỏi dữ liệu PC trên cùng cổng access",
+"Tạo trunk chỉ dành cho server",
+"Chặn toàn bộ DHCP",
+"Thay thế VLAN native"
+],
+"a": 0,
+"e": "<b>Voice VLAN</b> cho phép điện thoại IP và PC dùng cùng một cổng vật lý nhưng tách lưu lượng thoại và dữ liệu, hỗ trợ QoS tốt hơn."
+},
+{
+"q": "Một trunk chỉ nên cho phép VLAN 10, 20 và 30 đi qua. Lệnh nào phù hợp?",
+"o": [
+"switchport trunk allowed vlan 10,20,30",
+"switchport access vlan 10,20,30",
+"ip route vlan 10 20 30",
+"spanning-tree vlan 10,20,30 root"
+],
+"a": 0,
+"e": "Dùng <b>switchport trunk allowed vlan 10,20,30</b> để giới hạn VLAN đi qua trunk, giảm broadcast không cần thiết và tăng bảo mật."
+},
+{
+"q": "Nếu hai switch nối với nhau nhưng VLAN 30 không đi qua trunk, PC VLAN 30 ở hai switch không liên lạc được. Lệnh nào cần kiểm tra?",
+"o": [
+"show interfaces trunk",
+"show version",
+"show ip dhcp binding",
+"show ntp status"
+],
+"a": 0,
+"e": "Cần xem VLAN 30 có nằm trong <b>allowed VLAN list</b> và đang forwarding trên trunk hay không bằng show interfaces trunk."
+},
+{
+"q": "Khi đổi một cổng từ trunk sang access nối PC, thao tác nào nên làm để tránh cấu hình dư gây lỗi?",
+"o": [
+"Xóa hoặc ghi đè cấu hình trunk không cần thiết và đặt switchport mode access",
+"Tắt toàn bộ VLAN trên switch",
+"Đổi router ID OSPF",
+"Xóa bảng định tuyến"
+],
+"a": 0,
+"e": "Nên cấu hình rõ <b>switchport mode access</b>, switchport access vlan X và loại bỏ cấu hình trunk/allowed/native không cần thiết để tránh hành vi ngoài ý muốn."
+},
+{
+"q": "Trong mô hình nhiều VLAN, default gateway của PC VLAN 40 nên là địa chỉ nào?",
+"o": [
+"Địa chỉ IP của SVI/subinterface VLAN 40",
+"Địa chỉ IP của PC khác VLAN",
+"Địa chỉ MAC của switch",
+"Địa chỉ broadcast 255.255.255.255"
+],
+"a": 0,
+"e": "Host trong VLAN 40 cần default gateway là <b>IP của SVI hoặc subinterface VLAN 40</b>, tức gateway cùng subnet với host."
+},
+{
+"q": "Một SVI trạng thái up/down thường có thể do nguyên nhân nào?",
+"o": [
+"Không có cổng access/trunk nào trong VLAN đó đang up",
+"Router ID bị trùng",
+"DNS server sai",
+"DHCP lease quá dài"
+],
+"a": 0,
+"e": "SVI cần VLAN tồn tại và có ít nhất một cổng thuộc VLAN đó đang active/up (hoặc trunk mang VLAN đó) thì line protocol mới up."
+},
+{
+"q": "Mục đích của VLAN pruning trên trunk là gì?",
+"o": [
+"Cho tất cả VLAN đi qua mọi trunk",
+"Giảm lưu lượng không cần thiết bằng cách không gửi VLAN không dùng qua trunk",
+"Tắt định tuyến giữa VLAN",
+"Thay thế DHCP relay"
+],
+"a": 1,
+"e": "<b>Pruning/allowed VLAN list</b> giúp chỉ cho VLAN cần thiết đi qua trunk, giảm broadcast, giảm rủi ro và dễ kiểm soát hơn."
+},
+{
+"q": "ACL chuẩn trên Cisco thường lọc gói dựa trên thông tin nào?",
+"o": [
+"Địa chỉ IP nguồn",
+"Địa chỉ IP đích và cổng TCP",
+"Nội dung ứng dụng HTTP",
+"Địa chỉ MAC đích"
+],
+"a": 0,
+"e": "<b>Standard ACL</b> chỉ lọc theo IP nguồn. Extended ACL mới lọc được nguồn, đích, giao thức và port."
+},
+{
+"q": "ACL mở rộng có thể lọc dựa trên yếu tố nào?",
+"o": [
+"Chỉ VLAN ID",
+"Nguồn, đích, giao thức và cổng dịch vụ",
+"Chỉ hostname thiết bị",
+"Chỉ bridge priority"
+],
+"a": 1,
+"e": "<b>Extended ACL</b> linh hoạt hơn: lọc IP nguồn/đích, TCP/UDP/ICMP và số port, nên thường đặt gần nguồn lưu lượng."
+},
+{
+"q": "Dòng cuối ngầm định của một ACL Cisco là gì?",
+"o": [
+"permit ip any any",
+"deny any/deny ip any any",
+"permit tcp any any eq 80",
+"log all"
+],
+"a": 1,
+"e": "Mọi ACL đều có <b>implicit deny</b> ở cuối. Nếu không có dòng permit phù hợp, lưu lượng sẽ bị chặn."
+},
+{
+"q": "Khi dùng ACL chuẩn để chặn một mạng nguồn, ACL nên đặt gần đâu nhất để tránh chặn nhầm lưu lượng?",
+"o": [
+"Gần đích",
+"Gần nguồn",
+"Trên tất cả cổng trunk",
+"Trên cổng console"
+],
+"a": 0,
+"e": "Vì standard ACL chỉ biết IP nguồn, đặt <b>gần đích</b> giúp tránh chặn nguồn đó đi tới các đích khác không liên quan."
+},
+{
+"q": "Khi dùng ACL mở rộng để chặn dịch vụ cụ thể, ACL nên đặt gần đâu nhất?",
+"o": [
+"Gần nguồn",
+"Gần DNS server bắt buộc",
+"Chỉ trên native VLAN",
+"Luôn ngoài Internet"
+],
+"a": 0,
+"e": "Extended ACL biết rõ nguồn/đích/port nên đặt <b>gần nguồn</b> để loại bỏ lưu lượng không mong muốn sớm, tiết kiệm băng thông."
+},
+{
+"q": "Lệnh nào xem nội dung ACL và số lần khớp từng dòng trên Cisco?",
+"o": [
+"show access-lists",
+"show vlan brief",
+"show interfaces trunk",
+"show ip dhcp pool"
+],
+"a": 0,
+"e": "<b>show access-lists</b> hiển thị các ACE và hit count, rất hữu ích để biết rule nào đang thật sự được dùng."
+},
+{
+"q": "Wildcard mask 0.0.0.255 trong ACL tương ứng với phạm vi nào?",
+"o": [
+"Một host duy nhất",
+"Một mạng /24",
+"Toàn bộ Internet",
+"Một mạng /16"
+],
+"a": 1,
+"e": "Wildcard <b>0.0.0.255</b> nghĩa là 24 bit đầu phải khớp, 8 bit cuối bất kỳ → tương ứng subnet /24."
+},
+{
+"q": "Từ khóa `host 192.168.1.10` trong ACL tương đương với cú pháp nào?",
+"o": [
+"192.168.1.10 0.0.0.0",
+"192.168.1.10 255.255.255.255",
+"192.168.1.0 0.0.0.255",
+"any"
+],
+"a": 0,
+"e": "<b>host 192.168.1.10</b> là viết tắt của 192.168.1.10 0.0.0.0, tức chỉ khớp đúng một địa chỉ."
+},
+{
+"q": "Muốn cho phép mọi địa chỉ nguồn trong ACL, từ khóa nào thường dùng?",
+"o": [
+"host",
+"any",
+"native",
+"root"
+],
+"a": 1,
+"e": "Từ khóa <b>any</b> tương đương 0.0.0.0 255.255.255.255, tức khớp mọi địa chỉ."
+},
+{
+"q": "NAT dùng để làm gì trong mạng doanh nghiệp nhỏ?",
+"o": [
+"Dịch địa chỉ IP private sang public để truy cập Internet",
+"Bầu chọn root bridge",
+"Cấp VLAN cho switch",
+"Tăng kích thước frame Ethernet"
+],
+"a": 0,
+"e": "<b>NAT</b> dịch địa chỉ private nội bộ thành địa chỉ public khi ra Internet, giúp tiết kiệm IPv4 public và che bớt cấu trúc mạng nội bộ."
+},
+{
+"q": "PAT thường khác NAT tĩnh ở điểm nào?",
+"o": [
+"PAT dùng thêm số port để nhiều host private chia sẻ một IP public",
+"PAT chỉ chạy với IPv6",
+"PAT không cần bảng dịch",
+"PAT dùng để bầu DR/BDR"
+],
+"a": 0,
+"e": "<b>PAT/NAT overload</b> dùng số port để phân biệt nhiều kết nối, cho phép nhiều máy private cùng dùng một IP public."
+},
+{
+"q": "Trong NAT, cổng nối về phía mạng nội bộ thường được đánh dấu bằng lệnh nào?",
+"o": [
+"ip nat inside",
+"ip nat outside",
+"switchport trunk native",
+"spanning-tree bpduguard enable"
+],
+"a": 0,
+"e": "Interface hướng LAN được cấu hình <b>ip nat inside</b>; interface hướng Internet/upstream là ip nat outside."
+},
+{
+"q": "Trong NAT, cổng nối về phía Internet thường được đánh dấu bằng lệnh nào?",
+"o": [
+"ip nat inside",
+"ip nat outside",
+"ip helper-address",
+"switchport mode access"
+],
+"a": 1,
+"e": "Cổng WAN/Internet là <b>ip nat outside</b>. NAT cần phân biệt inside và outside để biết chiều dịch địa chỉ."
+},
+{
+"q": "Lệnh nào thường dùng để xem bảng dịch NAT đang hoạt động?",
+"o": [
+"show ip nat translations",
+"show mac address-table",
+"show spanning-tree root",
+"show controllers"
+],
+"a": 0,
+"e": "<b>show ip nat translations</b> hiển thị các ánh xạ inside local, inside global, outside local/global đang tồn tại."
+},
+{
+"q": "NAT overload thường cần ACL để làm gì?",
+"o": [
+"Chọn các địa chỉ nội bộ được phép dịch NAT",
+"Chọn root bridge",
+"Chọn VLAN native",
+"Chọn router ID OSPF"
+],
+"a": 0,
+"e": "ACL trong NAT overload thường dùng để <b>match dải IP private nội bộ</b> nào sẽ được dịch ra ngoài."
+},
+{
+"q": "Port Security trên switch dùng để làm gì?",
+"o": [
+"Giới hạn hoặc kiểm soát MAC được phép trên một cổng access",
+"Tự động định tuyến giữa VLAN",
+"Dịch địa chỉ IP public",
+"Cấp DHCP cho client"
+],
+"a": 0,
+"e": "<b>Port Security</b> kiểm soát số lượng/địa chỉ MAC trên cổng access, giúp hạn chế cắm thiết bị lạ hoặc MAC flooding đơn giản."
+},
+{
+"q": "Chế độ vi phạm port-security nào đưa cổng vào trạng thái err-disabled?",
+"o": [
+"protect",
+"restrict",
+"shutdown",
+"forward"
+],
+"a": 2,
+"e": "Violation mode <b>shutdown</b> sẽ đưa cổng vào err-disabled khi vi phạm. Protect chỉ drop, restrict drop và tăng counter/log tùy cấu hình."
+},
+{
+"q": "DHCP Snooping giúp chống kiểu tấn công nào?",
+"o": [
+"Rogue DHCP server cấp gateway/DNS giả",
+"Sai router ID OSPF",
+"Native VLAN mismatch",
+"Duplex mismatch"
+],
+"a": 0,
+"e": "<b>DHCP Snooping</b> phân biệt cổng trusted/untrusted, chặn DHCP offer từ cổng không tin cậy để chống DHCP giả mạo."
+},
+{
+"q": "Cổng nối đến DHCP server hợp lệ hoặc uplink về server nên đặt trạng thái gì trong DHCP Snooping?",
+"o": [
+"Untrusted",
+"Trusted",
+"Blocked STP vĩnh viễn",
+"Native only"
+],
+"a": 1,
+"e": "Cổng về DHCP server thật hoặc uplink đáng tin cần đặt <b>trusted</b>; cổng access người dùng để untrusted nhằm chặn server giả."
+},
+{
+"q": "BPDU Guard thường dùng cùng PortFast để làm gì?",
+"o": [
+"Tắt cổng nếu nhận BPDU trên cổng access, tránh cắm switch lạ gây loop",
+"Tăng tốc NAT",
+"Cấp phát IP nhanh hơn",
+"Đổi wildcard mask"
+],
+"a": 0,
+"e": "<b>BPDU Guard</b> bảo vệ cổng PortFast: nếu cổng access nhận BPDU, nó sẽ bị err-disable để tránh switch lạ tạo loop hoặc thao túng STP."
+},
+{
+"q": "Khi ping thất bại, bước kiểm tra Layer 1/2 đầu tiên hợp lý là gì?",
+"o": [
+"Kiểm tra đèn link, trạng thái interface và VLAN access",
+"Đổi ngay giao thức OSPF",
+"Xóa toàn bộ ACL",
+"Reload toàn bộ hệ thống"
+],
+"a": 0,
+"e": "Troubleshooting nên đi từ dưới lên: kiểm tra <b>cáp/link, interface up/down, VLAN access/trunk</b> trước khi đụng routing hay ứng dụng."
+},
+{
+"q": "Một PC có IP đúng nhưng subnet mask sai, lỗi nào có thể xảy ra?",
+"o": [
+"PC hiểu nhầm thiết bị khác là cùng mạng hoặc khác mạng, gây gửi sai ARP/gateway",
+"Switch không học được MAC",
+"STP mất root bridge",
+"NAT không tạo overload"
+],
+"a": 0,
+"e": "Subnet mask quyết định phạm vi local subnet. Sai mask khiến host <b>quyết định sai nên ARP trực tiếp hoặc gửi gateway sai</b>."
+},
+{
+"q": "Công cụ `traceroute`/`tracert` hữu ích nhất để kiểm tra điều gì?",
+"o": [
+"Đường đi qua các hop router đến đích",
+"Danh sách VLAN trên switch",
+"Bảng MAC của PC",
+"Mật khẩu SSH"
+],
+"a": 0,
+"e": "<b>Traceroute/tracert</b> cho biết gói đi qua những hop nào và dừng ở đâu, rất hữu ích khi ping tới mạng xa bị lỗi."
+},
+{
+"q": "Nếu hai PC cùng VLAN nhưng khác switch không ping được nhau, trong khi mỗi PC ping gateway được, lỗi nào đáng nghi?",
+"o": [
+"Trunk giữa switch không cho VLAN đó đi qua",
+"Default route Internet sai",
+"OSPF area không khớp",
+"NAT overload thiếu ACL"
+],
+"a": 0,
+"e": "Cùng VLAN nhưng ở hai switch cần trunk mang VLAN đó. Ping gateway được có thể gateway nằm cùng switch, nhưng <b>trunk allowed VLAN</b> thiếu sẽ làm hai PC không gặp nhau."
+},
+{
+"q": "Một host không phân giải được tên miền nhưng ping được 8.8.8.8. Nên kiểm tra gì trước?",
+"o": [
+"DNS server cấu hình trên host/DHCP",
+"STP priority",
+"EtherChannel mode",
+"Native VLAN"
+],
+"a": 0,
+"e": "Ping IP Internet được chứng tỏ routing/NAT cơ bản ổn. Không phân giải tên miền thì kiểm tra <b>DNS</b> trên host hoặc option DHCP."
+},
+{
+"q": "Nếu PC ping gateway không được, nhưng interface switch vẫn up, nguyên nhân nào rất đáng kiểm tra?",
+"o": [
+"PC bị gán sai VLAN hoặc gateway không cùng subnet",
+"Website đích bị down",
+"NAT outside thiếu overload",
+"OSPF thiếu area 0"
+],
+"a": 0,
+"e": "Không ping được gateway cục bộ thường do <b>sai IP/mask/gateway, sai VLAN access, SVI down</b> hoặc ACL cục bộ."
+},
+{
+"q": "Khi cấu hình ACL mới làm mất kết nối SSH quản trị router, nguyên nhân phổ biến là gì?",
+"o": [
+"ACL chặn nhầm lưu lượng quản trị hoặc thiếu dòng permit cần thiết",
+"VLAN native tự đổi",
+"DHCP Snooping tự tắt",
+"PortFast tự xóa"
+],
+"a": 0,
+"e": "ACL có implicit deny, nên nếu áp ACL vào interface/VTY mà <b>thiếu permit cho IP quản trị/SSH</b>, quản trị viên có thể tự khóa mình khỏi thiết bị."
+},
+{
+"q": "Một liên kết trunk báo native VLAN mismatch. Cách xử lý đúng là gì?",
+"o": [
+"Cấu hình native VLAN giống nhau ở hai đầu hoặc đổi về thiết kế thống nhất",
+"Tắt DHCP server",
+"Đổi subnet mask PC",
+"Xóa router ID"
+],
+"a": 0,
+"e": "Native VLAN phải <b>khớp ở hai đầu trunk</b>. Không khớp có thể gây VLAN leaking và cảnh báo CDP/STP."
+},
+{
+"q": "Một router có default route đúng nhưng vẫn không ra Internet sau khi thêm NAT. Lệnh nào nên dùng để kiểm tra NAT có tạo bản dịch chưa?",
+"o": [
+"show ip nat translations",
+"show spanning-tree",
+"show vlan brief",
+"show cdp neighbors detail"
+],
+"a": 0,
+"e": "Nếu default route ổn, cần xem NAT có thật sự dịch chưa bằng <b>show ip nat translations</b> và kiểm tra inside/outside, ACL NAT."
+},
+{
+"q": "Trong xử lý sự cố mạng, vì sao nên thay đổi từng yếu tố một thay vì sửa hàng loạt?",
+"o": [
+"Để dễ xác định nguyên nhân thật sự và tránh tạo lỗi mới",
+"Để STP bầu root nhanh hơn",
+"Để DHCP cấp IP dài hơn",
+"Để MAC address ngắn lại"
+],
+"a": 0,
+"e": "Thay đổi từng bước giúp <b>cô lập nguyên nhân</b>. Sửa hàng loạt dễ làm mất dấu lỗi gốc và sinh thêm lỗi mới."
+},
+{
+"q": "Khi chia mạng 192.168.5.0/24 thành ít nhất 10 mạng con sử dụng được, cần mượn tối thiểu bao nhiêu bit từ phần host?",
+"o": [
+"2 bit",
+"3 bit",
+"4 bit",
+"5 bit"
+],
+"a": 2,
+"e": "Cần số subnet thỏa <b>2^n ≥ 10</b>. Với n=4 tạo 16 subnet, đủ 10 mạng con; /24 mượn 4 bit thành /28."
+},
+{
+"q": "Nếu 192.168.5.0/24 được chia thành các subnet /28, mỗi subnet có bao nhiêu địa chỉ IP hợp lệ cho host?",
+"o": [
+"14 host",
+"16 host",
+"30 host",
+"62 host"
+],
+"a": 0,
+"e": "Subnet /28 còn 4 bit host: 2^4 = 16 địa chỉ, trừ network và broadcast còn <b>14 host hợp lệ</b>."
+},
+{
+"q": "Với subnet /28 trong mạng 192.168.5.0/24, bước nhảy ở octet cuối là bao nhiêu?",
+"o": [
+"4",
+"8",
+"16",
+"32"
+],
+"a": 2,
+"e": "Mask /28 là 255.255.255.240, bước nhảy = 256 - 240 = <b>16</b>."
+},
+{
+"q": "Subnet đầu tiên của 192.168.5.0/24 khi chia /28 có dải host hợp lệ nào?",
+"o": [
+"192.168.5.0 - 192.168.5.15",
+"192.168.5.1 - 192.168.5.14",
+"192.168.5.16 - 192.168.5.31",
+"192.168.5.1 - 192.168.5.16"
+],
+"a": 1,
+"e": "Subnet đầu là 192.168.5.0/28, broadcast 192.168.5.15, nên host hợp lệ là <b>192.168.5.1–192.168.5.14</b>."
+},
+{
+"q": "Subnet thứ hai của 192.168.5.0/24 khi chia /28 có địa chỉ mạng là gì?",
+"o": [
+"192.168.5.8",
+"192.168.5.15",
+"192.168.5.16",
+"192.168.5.32"
+],
+"a": 2,
+"e": "Với /28, bước nhảy là 16: 0, 16, 32, 48... nên subnet thứ hai là <b>192.168.5.16/28</b>."
+},
+{
+"q": "Broadcast của subnet 192.168.5.32/28 là địa chỉ nào?",
+"o": [
+"192.168.5.46",
+"192.168.5.47",
+"192.168.5.48",
+"192.168.5.63"
+],
+"a": 1,
+"e": "Subnet 192.168.5.32/28 có dải 32–47, host 33–46, broadcast là <b>192.168.5.47</b>."
+},
+{
+"q": "Mạng cần khoảng 70 host. Prefix nhỏ nhất phù hợp là gì?",
+"o": [
+"/25",
+"/26",
+"/27",
+"/28"
+],
+"a": 0,
+"e": "70 host cần ít nhất 7 bit host vì 2^7 - 2 = 126. Prefix là 32 - 7 = <b>/25</b>."
+},
+{
+"q": "Mạng cần 55 host. Prefix nhỏ nhất phù hợp là gì?",
+"o": [
+"/25",
+"/26",
+"/27",
+"/28"
+],
+"a": 1,
+"e": "55 host cần 6 bit host vì 2^6 - 2 = 62. Prefix phù hợp là <b>/26</b>."
+},
+{
+"q": "Mạng cần 30 host. Prefix nào vừa đủ nhất?",
+"o": [
+"/25",
+"/26",
+"/27",
+"/28"
+],
+"a": 2,
+"e": "30 host cần 5 bit host vì 2^5 - 2 = 30. Prefix là <b>/27</b>."
+},
+{
+"q": "Mạng cần đúng 2 host cho kết nối WAN point-to-point. Prefix IPv4 truyền thống thường dùng là gì?",
+"o": [
+"/24",
+"/27",
+"/29",
+"/30"
+],
+"a": 3,
+"e": "Kết nối point-to-point cần 2 IP usable. /30 có 4 địa chỉ, trừ network/broadcast còn <b>2 host</b>."
+},
+{
+"q": "Trong VLSM, vì sao nên cấp subnet cho mạng có số host lớn trước?",
+"o": [
+"Để tránh lãng phí và tránh vỡ dải địa chỉ",
+"Để tăng tốc độ switch",
+"Để tắt broadcast",
+"Để bỏ qua subnet mask"
+],
+"a": 0,
+"e": "VLSM nên xếp nhu cầu host giảm dần. Cấp mạng lớn trước giúp <b>không bị thiếu block liên tục</b> và giảm lãng phí."
+},
+{
+"q": "Với khối 172.16.0.0/22, tổng số địa chỉ IP trong khối là bao nhiêu?",
+"o": [
+"256",
+"512",
+"1024",
+"2048"
+],
+"a": 2,
+"e": "/22 còn 10 bit host nên có 2^10 = <b>1024 địa chỉ</b>."
+},
+{
+"q": "Khối 172.16.0.0/22 bao phủ dải địa chỉ nào?",
+"o": [
+"172.16.0.0 - 172.16.0.255",
+"172.16.0.0 - 172.16.1.255",
+"172.16.0.0 - 172.16.3.255",
+"172.16.0.0 - 172.16.7.255"
+],
+"a": 2,
+"e": "Mask /22 là 255.255.252.0, bước nhảy ở octet thứ ba là 4, nên dải là <b>172.16.0.0–172.16.3.255</b>."
+},
+{
+"q": "Một mạng cần 400 host. Prefix nhỏ nhất phù hợp là gì?",
+"o": [
+"/22",
+"/23",
+"/24",
+"/25"
+],
+"a": 1,
+"e": "400 host cần 9 bit host vì 2^9 - 2 = 510. Prefix là 32 - 9 = <b>/23</b>."
+},
+{
+"q": "Một mạng cần 180 host. Prefix nhỏ nhất phù hợp là gì?",
+"o": [
+"/23",
+"/24",
+"/25",
+"/26"
+],
+"a": 1,
+"e": "180 host cần 8 bit host vì 2^8 - 2 = 254. Prefix phù hợp là <b>/24</b>."
+},
+{
+"q": "Một mạng cần 40 host. Prefix nhỏ nhất phù hợp là gì?",
+"o": [
+"/25",
+"/26",
+"/27",
+"/28"
+],
+"a": 1,
+"e": "40 host cần 6 bit host vì 2^6 - 2 = 62. Prefix là <b>/26</b>."
+},
+{
+"q": "Một mạng cần 18 host. Prefix nhỏ nhất phù hợp là gì?",
+"o": [
+"/26",
+"/27",
+"/28",
+"/29"
+],
+"a": 1,
+"e": "18 host cần 5 bit host vì 2^5 - 2 = 30. Prefix là <b>/27</b>."
+},
+{
+"q": "Một mạng cần 15 host. Vì sao không thể dùng /28 theo cách tính IPv4 truyền thống?",
+"o": [
+"/28 chỉ có 14 host usable",
+"/28 không có broadcast",
+"/28 chỉ dùng cho WAN",
+"/28 là subnet mask sai"
+],
+"a": 0,
+"e": "/28 có 16 địa chỉ nhưng chỉ <b>14 host usable</b>, không đủ 15 host; cần /27."
+},
+{
+"q": "Một mạng cần 5 host. Prefix nhỏ nhất phù hợp là gì?",
+"o": [
+"/28",
+"/29",
+"/30",
+"/31"
+],
+"a": 1,
+"e": "5 host cần 3 bit host vì 2^3 - 2 = 6. Prefix là <b>/29</b>."
+},
+{
+"q": "Subnet 172.16.3.128/29 có broadcast là gì?",
+"o": [
+"172.16.3.134",
+"172.16.3.135",
+"172.16.3.136",
+"172.16.3.143"
+],
+"a": 1,
+"e": "/29 có block size 8. Dải 128–135 nên broadcast là <b>172.16.3.135</b>."
+},
+{
+"q": "Dải host hợp lệ của subnet 172.16.3.136/30 là gì?",
+"o": [
+"172.16.3.136 - 172.16.3.139",
+"172.16.3.137 - 172.16.3.138",
+"172.16.3.138 - 172.16.3.139",
+"172.16.3.135 - 172.16.3.136"
+],
+"a": 1,
+"e": "/30 có 4 địa chỉ: network .136, host <b>.137–.138</b>, broadcast .139."
+},
+{
+"q": "Mask dạng thập phân của /26 là gì?",
+"o": [
+"255.255.255.128",
+"255.255.255.192",
+"255.255.255.224",
+"255.255.255.240"
+],
+"a": 1,
+"e": "Prefix /26 tương ứng subnet mask <b>255.255.255.192</b>."
+},
+{
+"q": "Mask dạng thập phân của /27 là gì?",
+"o": [
+"255.255.255.128",
+"255.255.255.192",
+"255.255.255.224",
+"255.255.255.248"
+],
+"a": 2,
+"e": "Prefix /27 tương ứng subnet mask <b>255.255.255.224</b>."
+},
+{
+"q": "Mask dạng thập phân của /29 là gì?",
+"o": [
+"255.255.255.240",
+"255.255.255.248",
+"255.255.255.252",
+"255.255.254.0"
+],
+"a": 1,
+"e": "Prefix /29 tương ứng subnet mask <b>255.255.255.248</b>."
+},
+{
+"q": "Trong subnetting, địa chỉ broadcast dùng để làm gì?",
+"o": [
+"Định danh chính subnet",
+"Gửi đến tất cả host trong subnet",
+"Làm default gateway bắt buộc",
+"Làm địa chỉ đầu tiên cho host"
+],
+"a": 1,
+"e": "Broadcast là địa chỉ dùng để <b>gửi tới tất cả host</b> trong cùng subnet, không gán cho thiết bị."
+},
+{
+"q": "Địa chỉ network của subnet thường có đặc điểm nào?",
+"o": [
+"Tất cả bit host bằng 0",
+"Tất cả bit host bằng 1",
+"Luôn là địa chỉ gateway",
+"Luôn là địa chỉ DNS"
+],
+"a": 0,
+"e": "Địa chỉ network định danh subnet và có <b>toàn bộ bit host bằng 0</b>."
+},
+{
+"q": "Địa chỉ broadcast của subnet thường có đặc điểm nào?",
+"o": [
+"Tất cả bit network bằng 0",
+"Tất cả bit host bằng 1",
+"Luôn kết thúc bằng .255",
+"Luôn dùng làm gateway"
+],
+"a": 1,
+"e": "Broadcast của subnet có <b>toàn bộ bit host bằng 1</b>. Không phải lúc nào cũng kết thúc bằng .255."
+},
+{
+"q": "Với subnet 192.168.1.128/26, dải host hợp lệ là gì?",
+"o": [
+"192.168.1.128 - 192.168.1.191",
+"192.168.1.129 - 192.168.1.190",
+"192.168.1.130 - 192.168.1.191",
+"192.168.1.127 - 192.168.1.190"
+],
+"a": 1,
+"e": "/26 dải 128–191, network .128, broadcast .191, host hợp lệ <b>.129–.190</b>."
+},
+{
+"q": "Với subnet 192.168.1.192/27, broadcast là gì?",
+"o": [
+"192.168.1.207",
+"192.168.1.223",
+"192.168.1.224",
+"192.168.1.255"
+],
+"a": 1,
+"e": "/27 block size 32. Dải 192–223 nên broadcast là <b>192.168.1.223</b>."
+},
+{
+"q": "Với subnet 192.168.1.224/27, host cuối cùng hợp lệ là gì?",
+"o": [
+"192.168.1.253",
+"192.168.1.254",
+"192.168.1.255",
+"192.168.2.1"
+],
+"a": 1,
+"e": "Subnet 224/27 có broadcast .255, nên host cuối cùng hợp lệ là <b>192.168.1.254</b>."
+},
+{
+"q": "Khi cấu hình inter-VLAN routing bằng router-on-a-stick, loại cổng nào cần cấu hình trên switch nối router?",
+"o": [
+"Access port",
+"Trunk port",
+"Console port",
+"Shutdown port"
+],
+"a": 1,
+"e": "Router-on-a-stick cần một liên kết mang nhiều VLAN, nên cổng switch nối router phải là <b>trunk port</b>."
+},
+{
+"q": "Trong router-on-a-stick, mỗi VLAN thường được cấu hình trên router bằng gì?",
+"o": [
+"Subinterface",
+"Loopback duy nhất",
+"DHCP pool duy nhất",
+"Một cổng console riêng"
+],
+"a": 0,
+"e": "Router dùng <b>subinterface</b> như G0/0.10, G0/0.20, mỗi subinterface gắn với một VLAN."
+},
+{
+"q": "Lệnh `encapsulation dot1Q 10` trên subinterface router có ý nghĩa gì?",
+"o": [
+"Gán subinterface xử lý frame VLAN 10",
+"Tạo VLAN 10 trên switch",
+"Xóa tag VLAN 10",
+"Tắt routing cho VLAN 10"
+],
+"a": 0,
+"e": "Lệnh này cho router biết subinterface sẽ xử lý frame được gắn thẻ <b>802.1Q VLAN 10</b>."
+},
+{
+"q": "Trong mô hình router-on-a-stick, địa chỉ IP trên subinterface thường đóng vai trò gì với host trong VLAN?",
+"o": [
+"DNS server",
+"Default gateway",
+"MAC đích cố định",
+"DHCP lease time"
+],
+"a": 1,
+"e": "IP của subinterface là <b>default gateway</b> cho các host trong VLAN tương ứng."
+},
+{
+"q": "Nếu PC ở VLAN 10 ping PC ở VLAN 20 không được, nhưng ping gateway VLAN 10 được, khả năng cần kiểm tra nhất là gì?",
+"o": [
+"Cấu hình inter-VLAN routing/gateway VLAN 20",
+"Cáp console",
+"Địa chỉ MAC của màn hình",
+"Banner MOTD"
+],
+"a": 0,
+"e": "Ping được gateway cùng VLAN cho thấy access/VLAN 10 ổn; cần kiểm tra <b>routing giữa VLAN và gateway VLAN 20</b>."
+},
+{
+"q": "Lệnh nào thường dùng để xem danh sách VLAN và các cổng access đang thuộc VLAN trên switch Cisco?",
+"o": [
+"show vlan brief",
+"show ip route",
+"show interfaces serial",
+"show running-config ospf"
+],
+"a": 0,
+"e": "<b>show vlan brief</b> hiển thị VLAN hiện có và các cổng access thuộc từng VLAN."
+},
+{
+"q": "Lệnh nào dùng để kiểm tra cổng trunk trên switch Cisco?",
+"o": [
+"show interfaces trunk",
+"show ip dhcp binding",
+"show arp detail",
+"show clock"
+],
+"a": 0,
+"e": "<b>show interfaces trunk</b> cho biết cổng nào đang trunk, native VLAN và VLAN được phép đi qua."
+},
+{
+"q": "Nếu VLAN 30 đã bị xóa khỏi switch nhưng cổng access vẫn đang gán vào VLAN 30, vấn đề nào có thể xảy ra?",
+"o": [
+"Cổng có thể bị inactive hoặc không hoạt động đúng cho VLAN đó",
+"Router tự tạo VLAN 30",
+"DHCP tự chuyển sang VLAN 1",
+"STP bị xóa khỏi switch"
+],
+"a": 0,
+"e": "Khi một VLAN bị xóa, các cổng đang gán vào VLAN đó có thể bị <b>inactive</b> hoặc không chuyển tiếp đúng cho đến khi được gán sang VLAN hợp lệ."
+},
+{
+"q": "Native VLAN trên trunk 802.1Q là VLAN nào?",
+"o": [
+"VLAN dùng cho frame không gắn thẻ",
+"VLAN luôn bị chặn",
+"VLAN chỉ dùng cho OSPF",
+"VLAN không thể đổi"
+],
+"a": 0,
+"e": "Native VLAN là VLAN nhận các frame <b>không gắn thẻ</b> trên trunk 802.1Q."
+},
+{
+"q": "Vì sao nên tránh dùng VLAN 1 làm VLAN quản trị trong hệ thống thật?",
+"o": [
+"VLAN 1 không truyền được dữ liệu",
+"VLAN 1 thường là mặc định, dễ bị lạm dụng hoặc cấu hình nhầm",
+"VLAN 1 không hỗ trợ STP",
+"VLAN 1 chỉ chạy IPv6"
+],
+"a": 1,
+"e": "VLAN 1 là mặc định trên Cisco, xuất hiện ở nhiều nơi. Tách quản trị sang VLAN khác giúp <b>giảm rủi ro bảo mật và nhầm cấu hình</b>."
+},
+{
+"q": "Nếu trunk chỉ cho phép VLAN 10 nhưng PC ở VLAN 20 cần qua trunk, hiện tượng nào xảy ra?",
+"o": [
+"VLAN 20 vẫn đi bình thường",
+"Lưu lượng VLAN 20 bị chặn trên trunk",
+"Switch tự đổi VLAN 20 thành VLAN 10",
+"Router tự thêm VLAN 20"
+],
+"a": 1,
+"e": "Danh sách allowed VLAN giới hạn VLAN được đi qua trunk. Nếu VLAN 20 không được phép, <b>lưu lượng VLAN 20 bị chặn</b>."
+},
+{
+"q": "Lệnh `switchport mode access` dùng để làm gì?",
+"o": [
+"Ép cổng hoạt động như cổng access",
+"Ép cổng thành trunk",
+"Bật OSPF trên cổng",
+"Tạo DHCP relay"
+],
+"a": 0,
+"e": "Lệnh này cấu hình cổng switch ở chế độ <b>access</b>, thường dùng nối PC, máy in hoặc end device."
+},
+{
+"q": "Lệnh `switchport access vlan 20` có tác dụng gì?",
+"o": [
+"Tạo VLAN 20 trên router",
+"Gán cổng access vào VLAN 20",
+"Đổi native VLAN thành 20 cho mọi trunk",
+"Xóa VLAN 20"
+],
+"a": 1,
+"e": "Trên cổng access, lệnh này <b>gán cổng vào VLAN 20</b>."
+},
+{
+"q": "Lệnh `switchport mode trunk` dùng để làm gì?",
+"o": [
+"Cho cổng mang nhiều VLAN",
+"Chỉ cho phép một PC duy nhất",
+"Tắt VLAN tagging",
+"Bật DHCP server"
+],
+"a": 0,
+"e": "Cổng trunk dùng để <b>mang nhiều VLAN</b> giữa switch-switch hoặc switch-router/L3 switch."
+},
+{
+"q": "Nếu hai switch nối với nhau nhưng một đầu access VLAN 10, một đầu trunk, lỗi thường gặp là gì?",
+"o": [
+"Có thể gây mất kết nối hoặc VLAN bị xử lý sai",
+"Tất cả VLAN tự đồng bộ đúng",
+"DHCP server tự sửa cấu hình",
+"OSPF tự bật"
+],
+"a": 0,
+"e": "Hai đầu liên kết nên thống nhất mode. Access-trunk mismatch có thể làm <b>tag VLAN bị hiểu sai</b> và gây mất kết nối."
+},
+{
+"q": "Trong thiết kế nhiều VLAN, thiết bị nào thường thực hiện định tuyến giữa các VLAN?",
+"o": [
+"Switch Layer 2 thuần",
+"Router hoặc switch Layer 3",
+"Hub",
+"Cáp console"
+],
+"a": 1,
+"e": "VLAN là các mạng Layer 2 tách biệt. Muốn liên lạc liên VLAN cần <b>router hoặc switch Layer 3</b>."
+},
+{
+"q": "SVI trên switch Layer 3 là gì?",
+"o": [
+"Giao diện VLAN ảo có IP để định tuyến/quản trị",
+"Cáp vật lý nối switch với PC",
+"Bảng MAC của switch",
+"Gói tin STP"
+],
+"a": 0,
+"e": "<b>SVI</b> là interface vlan X. Nó có thể dùng làm gateway cho VLAN trên switch Layer 3 hoặc làm IP quản trị."
+},
+{
+"q": "Lệnh nào thường bật chức năng định tuyến Layer 3 trên switch multilayer Cisco?",
+"o": [
+"ip routing",
+"spanning-tree portfast",
+"service password-encryption",
+"line console 0"
+],
+"a": 0,
+"e": "Trên switch multilayer, cần bật <b>ip routing</b> để thiết bị định tuyến giữa các SVI."
+},
+{
+"q": "Nếu SVI VLAN 10 ở trạng thái down/down, nguyên nhân phổ biến là gì?",
+"o": [
+"Không có cổng nào active trong VLAN 10 hoặc VLAN chưa tồn tại",
+"OSPF chưa có router-id",
+"DNS sai",
+"NAT quá tải"
+],
+"a": 0,
+"e": "SVI thường chỉ up khi VLAN tồn tại và có ít nhất một cổng trong VLAN đó ở trạng thái hoạt động, hoặc trunk mang VLAN đó active."
+},
+{
+"q": "ACL chuẩn của Cisco thường lọc chủ yếu dựa trên thông tin nào?",
+"o": [
+"IP nguồn",
+"IP đích",
+"Port TCP đích",
+"URL website"
+],
+"a": 0,
+"e": "ACL chuẩn chủ yếu kiểm tra <b>địa chỉ IP nguồn</b>. ACL mở rộng mới lọc được nguồn/đích, protocol, port."
+},
+{
+"q": "ACL mở rộng có thể lọc dựa trên thông tin nào?",
+"o": [
+"IP nguồn, IP đích, giao thức và port",
+"Chỉ hostname",
+"Chỉ màu dây mạng",
+"Chỉ số VLAN native"
+],
+"a": 0,
+"e": "ACL mở rộng linh hoạt hơn: có thể lọc theo <b>IP nguồn/đích, TCP/UDP/ICMP và port</b>."
+},
+{
+"q": "Trong ACL Cisco, nếu không có dòng nào khớp, điều gì xảy ra ở cuối ACL?",
+"o": [
+"Implicit deny",
+"Implicit permit",
+"Tự hỏi DHCP server",
+"Tự chuyển sang NAT"
+],
+"a": 0,
+"e": "Cuối mọi ACL có một dòng ẩn <b>deny any</b>. Vì vậy cần thêm permit phù hợp nếu muốn cho phép lưu lượng."
+},
+{
+"q": "Vì sao thứ tự các dòng trong ACL rất quan trọng?",
+"o": [
+"ACL được kiểm tra từ trên xuống và dừng ở dòng khớp đầu tiên",
+"ACL chỉ đọc dòng cuối",
+"ACL sắp xếp tự động theo alphabet",
+"ACL không có thứ tự xử lý"
+],
+"a": 0,
+"e": "ACL xử lý <b>top-down</b>, gặp dòng khớp đầu tiên thì dừng. Đặt dòng quá rộng ở trên có thể che mất dòng phía dưới."
+},
+{
+"q": "Wildcard mask `0.0.0.255` trong ACL khớp với phạm vi nào khi đi cùng 192.168.10.0?",
+"o": [
+"Một host duy nhất",
+"Mạng 192.168.10.0/24",
+"Mạng 192.168.0.0/16",
+"Tất cả địa chỉ"
+],
+"a": 1,
+"e": "Wildcard 0.0.0.255 nghĩa là 3 octet đầu phải cố định, octet cuối bất kỳ → <b>192.168.10.0/24</b>."
+},
+{
+"q": "Trong ACL, từ khóa `host 192.168.1.10` tương đương với cách viết nào?",
+"o": [
+"192.168.1.10 0.0.0.0",
+"192.168.1.10 255.255.255.255",
+"192.168.1.0 0.0.0.255",
+"any"
+],
+"a": 0,
+"e": "Từ khóa <b>host</b> tương đương wildcard 0.0.0.0, tức chỉ khớp đúng một địa chỉ."
+},
+{
+"q": "Trong ACL, từ khóa `any` tương đương với cặp địa chỉ/wildcard nào?",
+"o": [
+"0.0.0.0 255.255.255.255",
+"255.255.255.255 0.0.0.0",
+"127.0.0.1 0.0.0.0",
+"192.168.1.0 0.0.0.255"
+],
+"a": 0,
+"e": "<b>any</b> tương đương 0.0.0.0 255.255.255.255, khớp mọi địa chỉ IPv4."
+},
+{
+"q": "ACL chuẩn nên đặt gần nguồn hay gần đích theo khuyến nghị thông thường?",
+"o": [
+"Gần đích",
+"Gần nguồn",
+"Luôn đặt trên switch access",
+"Không bao giờ đặt trên router"
+],
+"a": 0,
+"e": "ACL chuẩn chỉ biết IP nguồn nên thường đặt <b>gần đích</b> để tránh chặn nhầm lưu lượng đến các mạng khác."
+},
+{
+"q": "ACL mở rộng nên đặt gần nguồn hay gần đích theo khuyến nghị thông thường?",
+"o": [
+"Gần nguồn",
+"Gần đích",
+"Chỉ đặt ở cổng console",
+"Chỉ đặt trên DHCP server"
+],
+"a": 0,
+"e": "ACL mở rộng lọc chi tiết nên thường đặt <b>gần nguồn</b> để loại bỏ lưu lượng không mong muốn càng sớm càng tốt."
+},
+{
+"q": "Khi áp ACL vào interface theo chiều inbound, ACL kiểm tra gói ở thời điểm nào?",
+"o": [
+"Trước khi router tra bảng định tuyến",
+"Sau khi gói rời interface",
+"Chỉ sau khi NAT hoàn tất",
+"Khi gói đã đến PC đích"
+],
+"a": 0,
+"e": "ACL inbound được kiểm tra khi gói <b>vừa đi vào interface</b>, trước bước route lookup để quyết định đường ra."
+},
+{
+"q": "Khi áp ACL theo chiều outbound, ACL kiểm tra gói ở thời điểm nào?",
+"o": [
+"Trước khi vào router",
+"Sau khi router đã quyết định interface ra",
+"Trước khi host gửi ARP",
+"Trước khi DHCP cấp IP"
+],
+"a": 1,
+"e": "ACL outbound lọc gói <b>trước khi gói rời interface</b>, sau khi router đã chọn đường ra."
+},
+{
+"q": "NAT dùng để làm gì trong mạng IPv4 doanh nghiệp?",
+"o": [
+"Chuyển đổi địa chỉ IP private/public khi ra vào mạng",
+"Tạo VLAN mới",
+"Thay thế STP",
+"Cấp MAC address"
+],
+"a": 0,
+"e": "<b>NAT</b> chuyển đổi địa chỉ IP, thường dùng để host private truy cập Internet bằng IP public."
+},
+{
+"q": "PAT/NAT overload khác NAT tĩnh ở điểm nào?",
+"o": [
+"Nhiều host private có thể dùng chung một IP public nhờ port",
+"Không cần IP address",
+"Chỉ dùng được với IPv6",
+"Không dùng port"
+],
+"a": 0,
+"e": "PAT dùng thêm <b>số port</b> để phân biệt phiên, nên nhiều host private có thể chia sẻ một IP public."
+},
+{
+"q": "Trong NAT, interface nối về mạng LAN private thường được đánh dấu là gì?",
+"o": [
+"ip nat inside",
+"ip nat outside",
+"ip ospf inside",
+"switchport inside"
+],
+"a": 0,
+"e": "Interface hướng về mạng nội bộ/private thường cấu hình <b>ip nat inside</b>."
+},
+{
+"q": "Trong NAT, interface nối về ISP/Internet thường được đánh dấu là gì?",
+"o": [
+"ip nat inside",
+"ip nat outside",
+"ip helper-address",
+"ip route inside"
+],
+"a": 1,
+"e": "Interface hướng ra mạng ngoài/ISP thường cấu hình <b>ip nat outside</b>."
+},
+{
+"q": "Lệnh nào thường dùng để xem bảng dịch NAT hiện tại trên router Cisco?",
+"o": [
+"show ip nat translations",
+"show vlan brief",
+"show spanning-tree",
+"show interfaces trunk"
+],
+"a": 0,
+"e": "<b>show ip nat translations</b> hiển thị các bản ghi dịch địa chỉ NAT/PAT đang tồn tại."
+},
+{
+"q": "Lệnh nào thường dùng để xem thống kê hoạt động NAT trên router Cisco?",
+"o": [
+"show ip nat statistics",
+"show ip ospf database",
+"show mac address-table",
+"show startup-config"
+],
+"a": 0,
+"e": "<b>show ip nat statistics</b> cho biết số lượt dịch, inside/outside interface, pool và thông tin NAT liên quan."
+},
+{
+"q": "Một PC nội bộ ping được default gateway nhưng không ra Internet. Nếu mạng dùng NAT, mục nào nên kiểm tra?",
+"o": [
+"Default route và cấu hình NAT inside/outside",
+"Tên VLAN hiển thị đẹp chưa",
+"Banner MOTD",
+"Màu dây cáp"
+],
+"a": 0,
+"e": "Ra Internet cần route ra ISP và NAT đúng. Nên kiểm tra <b>default route, ACL NAT, inside/outside</b>."
+},
+{
+"q": "Nếu quên cấu hình `ip nat outside` trên cổng ra ISP, hậu quả có thể là gì?",
+"o": [
+"NAT không dịch đúng lưu lượng ra ngoài",
+"VLAN tự động bị xóa",
+"DHCP client đổi sang APIPA ngay",
+"STP trở thành root"
+],
+"a": 0,
+"e": "NAT cần xác định rõ inside/outside. Thiếu <b>ip nat outside</b> khiến quá trình dịch không hoạt động đúng."
+},
+{
+"q": "Port security trên switch thường dùng để làm gì?",
+"o": [
+"Giới hạn hoặc kiểm soát MAC address được phép trên cổng access",
+"Tăng số VLAN trên trunk",
+"Cấp IP qua DHCP",
+"Tạo OSPF neighbor"
+],
+"a": 0,
+"e": "<b>Port security</b> giúp giới hạn số MAC hoặc chỉ cho phép MAC cụ thể trên cổng access, giảm rủi ro cắm thiết bị lạ."
+},
+{
+"q": "Port security violation mode nào mặc định sẽ shutdown cổng khi vi phạm?",
+"o": [
+"protect",
+"restrict",
+"shutdown",
+"monitor"
+],
+"a": 2,
+"e": "Mode mặc định phổ biến là <b>shutdown</b>: cổng chuyển err-disabled khi có vi phạm port security."
+},
+{
+"q": "DHCP snooping giúp chống lại rủi ro nào?",
+"o": [
+"DHCP server giả mạo cấp gateway/DNS sai",
+"Sai subnet mask trong OSPF",
+"Trùng router ID",
+"Loop Layer 2 do STP"
+],
+"a": 0,
+"e": "<b>DHCP snooping</b> phân biệt cổng trusted/untrusted để chặn offer từ DHCP server giả mạo."
+},
+{
+"q": "Trong DHCP snooping, cổng nối đến DHCP server hợp lệ nên đặt trạng thái gì?",
+"o": [
+"Trusted",
+"Untrusted",
+"Shutdown",
+"Native"
+],
+"a": 0,
+"e": "Cổng nối DHCP server thật hoặc uplink về server nên đặt <b>trusted</b>; cổng người dùng thường untrusted."
+},
+{
+"q": "Dynamic ARP Inspection thường dựa vào bảng nào để kiểm tra ARP giả mạo?",
+"o": [
+"DHCP snooping binding table",
+"OSPF LSDB",
+"STP root table",
+"DNS cache"
+],
+"a": 0,
+"e": "DAI thường dùng <b>DHCP snooping binding table</b> để xác minh cặp IP-MAC hợp lệ."
+},
+{
+"q": "BPDU Guard thường được bật kèm PortFast để làm gì?",
+"o": [
+"Tắt cổng nếu nhận BPDU bất thường từ thiết bị nối vào cổng access",
+"Tăng tốc DHCP",
+"Tự tạo trunk",
+"Tự cấp IP cho router"
+],
+"a": 0,
+"e": "Cổng PortFast nối end device không nên nhận BPDU. <b>BPDU Guard</b> sẽ err-disable cổng nếu nhận BPDU để tránh loop/rogue switch."
+},
+{
+"q": "Lệnh `show mac address-table` dùng để xem thông tin gì?",
+"o": [
+"Bảng ánh xạ MAC với cổng/VLAN trên switch",
+"Bảng định tuyến IP",
+"Bảng NAT",
+"Danh sách DHCP lease"
+],
+"a": 0,
+"e": "Lệnh này xem <b>bảng MAC</b>, cho biết MAC nào học được trên cổng nào và VLAN nào."
+},
+{
+"q": "Lệnh `show ip route` dùng để kiểm tra gì?",
+"o": [
+"Bảng định tuyến Layer 3",
+"Bảng MAC Layer 2",
+"Danh sách VLAN",
+"Trạng thái PortFast"
+],
+"a": 0,
+"e": "<b>show ip route</b> hiển thị các tuyến connected, static, dynamic và default route trong bảng định tuyến."
+},
+{
+"q": "Lệnh `ping` chủ yếu dùng để kiểm tra điều gì?",
+"o": [
+"Khả năng reachability bằng ICMP",
+"Danh sách VLAN",
+"Tốc độ CPU router",
+"Mật khẩu console"
+],
+"a": 0,
+"e": "<b>ping</b> gửi ICMP Echo Request/Reply để kiểm tra thiết bị đích có liên lạc được hay không."
+},
+{
+"q": "Lệnh `traceroute` giúp xác định thông tin nào?",
+"o": [
+"Các hop mà gói tin đi qua đến đích",
+"Danh sách MAC trong switch",
+"Cổng DHCP server",
+"Native VLAN"
+],
+"a": 0,
+"e": "<b>traceroute</b> hiển thị từng router/hop trên đường đi, hữu ích để tìm điểm nghẽn hoặc điểm mất kết nối."
+},
+{
+"q": "Nếu PC tự nhận IP 169.254.x.x, bước kiểm tra hợp lý là gì?",
+"o": [
+"Kiểm tra DHCP server/relay, VLAN và kết nối tới gateway",
+"Đổi hostname switch",
+"Tắt OSPF mọi router",
+"Xóa bảng NAT"
+],
+"a": 0,
+"e": "169.254.x.x là APIPA, thường do không nhận DHCP. Cần kiểm tra <b>DHCP, relay, VLAN, trunk và gateway</b>."
+},
+{
+"q": "Nếu hai PC cùng VLAN không ping được nhau, nhưng đèn link đều sáng, mục nào nên kiểm tra đầu tiên?",
+"o": [
+"Hai cổng có thật sự cùng VLAN và cùng subnet không",
+"OSPF area backbone",
+"NAT overload",
+"Default route ra Internet"
+],
+"a": 0,
+"e": "Cùng VLAN cần cùng broadcast domain và IP cùng subnet. Kiểm tra <b>VLAN access và IP/mask</b> trước."
+},
+{
+"q": "Nếu hai PC khác VLAN muốn liên lạc, điều kiện bắt buộc là gì?",
+"o": [
+"Phải có thiết bị định tuyến giữa VLAN",
+"Phải cùng địa chỉ MAC",
+"Phải dùng cùng cổng switch",
+"Phải tắt default gateway"
+],
+"a": 0,
+"e": "Khác VLAN là khác mạng Layer 2, muốn liên lạc cần <b>router hoặc switch Layer 3</b> làm inter-VLAN routing."
+},
+{
+"q": "Nếu host ping được IP nhưng không truy cập được bằng tên miền, khả năng lỗi nằm ở đâu?",
+"o": [
+"DNS",
+"STP",
+"Duplex",
+"MAC table"
+],
+"a": 0,
+"e": "Ping IP được chứng tỏ reachability cơ bản ổn; không phân giải tên miền thường do <b>DNS</b> sai hoặc không truy cập được DNS."
+},
+{
+"q": "Nếu host ping được gateway nhưng không ping được mạng ngoài, cấu hình nào thường cần kiểm tra?",
+"o": [
+"Default route trên router/gateway",
+"Màu nền terminal",
+"Tên VLAN trong show vlan",
+"Cổng console"
+],
+"a": 0,
+"e": "Ping được gateway cho thấy LAN ổn. Không đi mạng ngoài thường do thiếu/sai <b>default route hoặc route ngược</b>."
+},
+{
+"q": "Nếu router nhận được gói đến mạng không có trong bảng định tuyến và không có default route, router sẽ làm gì?",
+"o": [
+"Loại bỏ gói",
+"Tự broadcast gói ra mọi cổng",
+"Tự tạo tuyến OSPF",
+"Gửi về DHCP server"
+],
+"a": 0,
+"e": "Không có route phù hợp và không có default route thì router <b>drop gói</b>."
+},
+{
+"q": "Trong troubleshooting, kiểm tra Layer 1 thường gồm việc gì?",
+"o": [
+"Cáp, nguồn, đèn link, tốc độ cổng",
+"ACL wildcard",
+"OSPF LSA type",
+"DNS record MX"
+],
+"a": 0,
+"e": "Layer 1 là vật lý: cần kiểm tra <b>cáp, nguồn thiết bị, đèn link, module, speed/duplex</b>."
+},
+{
+"q": "Trong troubleshooting, kiểm tra Layer 2 thường tập trung vào gì?",
+"o": [
+"VLAN, trunk, MAC table, STP",
+"Default route Internet",
+"DNS public",
+"HTTP status code"
+],
+"a": 0,
+"e": "Layer 2 liên quan <b>VLAN, trunk, bảng MAC, STP, EtherChannel</b>."
+},
+{
+"q": "Trong troubleshooting, kiểm tra Layer 3 thường tập trung vào gì?",
+"o": [
+"IP address, subnet mask, gateway, routing",
+"Cáp đồng hay cáp quang",
+"BPDU Guard màu gì",
+"Font chữ terminal"
+],
+"a": 0,
+"e": "Layer 3 liên quan <b>IP/mask/gateway, ARP, route, ACL Layer 3</b>."
+},
+{
+"q": "Nếu OSPF neighbor kẹt ở trạng thái 2-Way trên mạng broadcast, điều nào có thể là bình thường?",
+"o": [
+"Router là DROTHER và không tạo full adjacency với DROTHER khác",
+"Router bị mất nguồn",
+"DHCP hết IP",
+"VLAN bị xóa"
+],
+"a": 0,
+"e": "Trên mạng broadcast, DROTHER với DROTHER thường chỉ ở <b>2-Way</b>; Full adjacency chủ yếu với DR/BDR."
+},
+{
+"q": "Nếu OSPF neighbor không lên, cặp thông số nào rất cần so sánh giữa hai đầu?",
+"o": [
+"Area ID và hello/dead interval",
+"Tên PC và màu dây",
+"Số serial màn hình",
+"HTTP port và DNS name"
+],
+"a": 0,
+"e": "Neighbor OSPF cần khớp nhiều điều kiện, đặc biệt <b>area ID, hello/dead interval, subnet, authentication, MTU</b>."
+},
+{
+"q": "Nếu hai router OSPF có cùng router ID, vấn đề gì có thể xảy ra?",
+"o": [
+"Quan hệ láng giềng hoặc định tuyến có thể lỗi",
+"DHCP tự hoạt động tốt hơn",
+"STP tự chọn root mới",
+"Switch tăng băng thông"
+],
+"a": 0,
+"e": "Router ID phải duy nhất trong miền OSPF. Trùng ID có thể gây <b>neighbor flapping hoặc route lỗi</b>."
+},
+{
+"q": "OSPF cost mặc định thường liên quan trực tiếp đến yếu tố nào?",
+"o": [
+"Băng thông interface",
+"Địa chỉ MAC",
+"Số VLAN",
+"Tên host"
+],
+"a": 0,
+"e": "OSPF cost mặc định được tính dựa trên <b>bandwidth</b> của interface; bandwidth cao thường cost thấp hơn."
+},
+{
+"q": "Trong OSPF, đường có cost thấp hơn thường được hiểu là gì?",
+"o": [
+"Đường được ưu tiên hơn",
+"Đường bị chặn",
+"Đường chỉ dùng DHCP",
+"Đường không có IP"
+],
+"a": 0,
+"e": "OSPF chọn đường có tổng <b>cost thấp nhất</b> đến mạng đích."
+},
+{
+"q": "Lệnh `passive-interface` trong OSPF thường dùng để làm gì?",
+"o": [
+"Không gửi Hello trên interface nhưng vẫn quảng bá mạng đó",
+"Tắt hoàn toàn IP trên interface",
+"Xóa VLAN",
+"Bật DHCP server"
+],
+"a": 0,
+"e": "Passive-interface ngăn gửi Hello/thiết lập neighbor trên cổng đó, nhưng mạng vẫn có thể được <b>quảng bá vào OSPF</b>."
+},
+{
+"q": "Vì sao nên đặt LAN người dùng là passive-interface trong OSPF?",
+"o": [
+"Để tránh gửi Hello không cần thiết tới PC và tăng an toàn",
+"Để PC thành DR",
+"Để xóa default gateway",
+"Để bật trunk"
+],
+"a": 0,
+"e": "LAN nối PC không cần neighbor OSPF. Đặt passive giúp <b>giảm lưu lượng Hello và tránh lộ OSPF</b>."
+},
+{
+"q": "Default-information originate trong OSPF thường dùng để làm gì?",
+"o": [
+"Quảng bá default route vào OSPF",
+"Xóa LSDB",
+"Đổi native VLAN",
+"Cấp DHCP lease"
+],
+"a": 0,
+"e": "Lệnh <b>default-information originate</b> dùng để phát tán tuyến mặc định 0.0.0.0/0 cho các router OSPF khác."
+},
+{
+"q": "Nếu muốn router OSPF luôn quảng bá default route kể cả khi chưa có default route trong bảng định tuyến, thường thêm từ khóa nào?",
+"o": [
+"always",
+"native",
+"inside",
+"sticky"
+],
+"a": 0,
+"e": "Dùng <b>default-information originate always</b> để luôn quảng bá default route vào OSPF."
+},
+{
+"q": "Trong bảng định tuyến Cisco, ký hiệu O thường biểu thị tuyến học từ đâu?",
+"o": [
+"OSPF",
+"Static",
+"Connected",
+"RIP"
+],
+"a": 0,
+"e": "Ký hiệu <b>O</b> trong show ip route là tuyến học từ OSPF trong cùng area hoặc route OSPF thông thường."
+},
+{
+"q": "Trong bảng định tuyến Cisco, ký hiệu O IA thường biểu thị tuyến gì?",
+"o": [
+"OSPF inter-area route",
+"OSPF external route",
+"Connected route",
+"Static route"
+],
+"a": 0,
+"e": "<b>O IA</b> là tuyến OSPF liên vùng, học từ area khác thông qua ABR."
+},
+{
+"q": "Trong định tuyến, longest prefix match có nghĩa là gì?",
+"o": [
+"Router chọn tuyến có prefix cụ thể nhất khớp đích",
+"Router chọn tuyến có AD cao nhất",
+"Router chọn tuyến nhập cuối cùng",
+"Router chọn tuyến có IP thấp nhất"
+],
+"a": 0,
+"e": "Router ưu tiên tuyến khớp đích với <b>prefix dài nhất/cụ thể nhất</b>, trước khi xét AD giữa các nguồn route cùng prefix."
+},
+{
+"q": "Nếu có route 192.168.1.0/24 và route 192.168.1.128/25 cùng khớp đích 192.168.1.130, route nào được chọn?",
+"o": [
+"192.168.1.128/25",
+"192.168.1.0/24",
+"Default route",
+"Không route nào"
+],
+"a": 0,
+"e": "/25 cụ thể hơn /24 và vẫn khớp 192.168.1.130, nên router chọn <b>192.168.1.128/25</b>."
+},
+{"topic":"Bài tập subnetting","q":"Cho IP 192.168.10.77/26. Địa chỉ network của subnet này là gì?","o":["192.168.10.64","192.168.10.0","192.168.10.77","192.168.10.128"],"a":0,"e":"/26 có bước nhảy 64 ở octet cuối: 0, 64, 128, 192. IP 77 nằm trong dải 64-127 nên network là <b>192.168.10.64</b>."},
+{"topic":"Bài tập subnetting","q":"Cho IP 192.168.10.77/26. Địa chỉ broadcast của subnet này là gì?","o":["192.168.10.63","192.168.10.127","192.168.10.255","192.168.10.78"],"a":1,"e":"Subnet /26 chứa dải 192.168.10.64-192.168.10.127, nên broadcast là <b>192.168.10.127</b>."},
+{"topic":"Bài tập subnetting","q":"Cho IP 10.1.5.200/27. Network đúng là địa chỉ nào?","o":["10.1.5.192","10.1.5.200","10.1.5.224","10.1.5.160"],"a":0,"e":"/27 có bước nhảy 32: 160, 192, 224. Số 200 nằm trong dải 192-223 nên network là <b>10.1.5.192</b>."},
+{"topic":"Bài tập subnetting","q":"Cho subnet 10.1.5.192/27. Dải host hợp lệ là gì?","o":["10.1.5.193 - 10.1.5.222","10.1.5.192 - 10.1.5.223","10.1.5.193 - 10.1.5.223","10.1.5.192 - 10.1.5.222"],"a":0,"e":"Subnet /27 có 32 địa chỉ: network .192, broadcast .223, host hợp lệ là <b>.193 đến .222</b>."},
+{"topic":"Bài tập subnetting","q":"Mask 255.255.255.240 tương ứng prefix nào?","o":["/26","/27","/28","/29"],"a":2,"e":"Octet cuối 240 có 4 bit 1 (11110000). Tổng prefix là 24+4 = <b>/28</b>."},
+{"topic":"Bài tập subnetting","q":"Một subnet /28 có bao nhiêu địa chỉ tất cả, tính cả network và broadcast?","o":["8","14","16","30"],"a":2,"e":"/28 còn 4 bit host, tổng địa chỉ là 2^4 = <b>16</b>. Host usable theo cách truyền thống là 14."},
+{"topic":"Bài tập subnetting","q":"Mạng 172.20.0.0/16 muốn chia thành ít nhất 100 subnet. Cần mượn tối thiểu bao nhiêu bit?","o":["6 bit","7 bit","8 bit","10 bit"],"a":1,"e":"2^6 = 64 chưa đủ, 2^7 = 128 đủ ít nhất 100 subnet, nên cần mượn <b>7 bit</b>."},
+{"topic":"Bài tập subnetting","q":"Mượn 7 bit từ mạng /16 sẽ tạo prefix mới là gì?","o":["/21","/22","/23","/24"],"a":2,"e":"Prefix mới = 16 + 7 = <b>/23</b>."},
+{"topic":"Bài tập subnetting","q":"Subnet /23 có mask dạng thập phân là gì?","o":["255.255.254.0","255.255.252.0","255.255.255.0","255.255.248.0"],"a":0,"e":"/23 nghĩa là octet thứ ba có 7 bit 1: 11111110 = 254, nên mask là <b>255.255.254.0</b>."},
+{"topic":"Bài tập subnetting","q":"Subnet 172.20.6.0/23 bao phủ dải địa chỉ nào?","o":["172.20.6.0 - 172.20.6.255","172.20.6.0 - 172.20.7.255","172.20.0.0 - 172.20.7.255","172.20.6.0 - 172.20.8.255"],"a":1,"e":"/23 có bước nhảy 2 ở octet thứ ba, nên 172.20.6.0/23 bao phủ <b>172.20.6.0 đến 172.20.7.255</b>."},
+{"topic":"Bài tập subnetting","q":"Host 172.20.7.254/23 thuộc network nào?","o":["172.20.7.0","172.20.6.0","172.20.8.0","172.20.0.0"],"a":1,"e":"/23 nhảy 2 ở octet thứ ba: 0,2,4,6,8. Octet 7 nằm trong block 6-7 nên network là <b>172.20.6.0</b>."},
+{"topic":"Bài tập subnetting","q":"Một mạng cần 126 host usable. Prefix nhỏ nhất phù hợp là gì?","o":["/24","/25","/26","/27"],"a":1,"e":"/25 có 7 bit host, usable = 2^7 - 2 = <b>126</b>. /26 chỉ có 62 host."},
+{"topic":"Bài tập subnetting","q":"Một mạng cần 127 host usable theo IPv4 truyền thống. Prefix nhỏ nhất phù hợp là gì?","o":["/25","/24","/26","/23"],"a":1,"e":"/25 chỉ có 126 host usable, không đủ 127. /24 có 254 host usable, nên chọn <b>/24</b>."},
+{"topic":"Bài tập subnetting","q":"Subnet 192.168.44.96/29 có host đầu tiên là gì?","o":["192.168.44.96","192.168.44.97","192.168.44.102","192.168.44.103"],"a":1,"e":"/29 có 8 địa chỉ. Network là .96, broadcast là .103, host đầu tiên là <b>.97</b>."},
+{"topic":"Bài tập subnetting","q":"Subnet 192.168.44.96/29 có host cuối cùng là gì?","o":["192.168.44.101","192.168.44.102","192.168.44.103","192.168.44.104"],"a":1,"e":"Với /29 block .96-.103, broadcast là .103, host cuối cùng là <b>192.168.44.102</b>."},
+{"topic":"Bài tập subnetting","q":"Địa chỉ 192.168.44.103/29 trong subnet 192.168.44.96/29 là loại địa chỉ nào?","o":["Host hợp lệ","Network","Broadcast","Default gateway bắt buộc"],"a":2,"e":"Subnet .96/29 có dải .96-.103, nên .103 là <b>broadcast</b>."},
+{"topic":"Bài tập subnetting","q":"Wildcard mask tương ứng với subnet mask 255.255.255.192 là gì?","o":["0.0.0.63","0.0.0.127","0.0.0.31","0.0.0.255"],"a":0,"e":"Wildcard là phần bù của subnet mask: 255-192 = 63, nên wildcard là <b>0.0.0.63</b>."},
+{"topic":"Bài tập subnetting","q":"Wildcard 0.0.3.255 tương ứng với prefix nào?","o":["/20","/21","/22","/23"],"a":2,"e":"Wildcard 0.0.3.255 tương ứng mask 255.255.252.0, tức <b>/22</b>."},
+{"topic":"Bài tập subnetting","q":"Mạng 10.10.0.0/22 có bao nhiêu host usable theo IPv4 truyền thống?","o":["510","1022","2046","4094"],"a":1,"e":"/22 còn 10 bit host, usable = 2^10 - 2 = <b>1022</b>."},
+{"topic":"Bài tập subnetting","q":"Một link point-to-point hiện đại muốn tiết kiệm IPv4 nhất và thiết bị hỗ trợ RFC 3021. Prefix nào có thể dùng?","o":["/30","/31","/29","/32"],"a":1,"e":"RFC 3021 cho phép dùng <b>/31</b> trên liên kết point-to-point để có 2 địa chỉ usable, tiết kiệm hơn /30."},
+{"topic":"Bài tập VLSM","q":"Có khối 192.168.50.0/24. Cần cấp lần lượt 100 host, 50 host, 25 host. Prefix phù hợp lần lượt là gì?","o":["/25, /26, /27","/26, /27, /28","/25, /25, /26","/24, /25, /26"],"a":0,"e":"100 host cần /25 (126 usable), 50 host cần /26 (62 usable), 25 host cần /27 (30 usable)."},
+{"topic":"Bài tập VLSM","q":"Với khối 192.168.50.0/24, cấp mạng 100 host đầu tiên bằng /25. Subnet kế tiếp còn trống bắt đầu từ đâu?","o":["192.168.50.64","192.168.50.128","192.168.50.192","192.168.51.0"],"a":1,"e":"Subnet /25 đầu tiên dùng 192.168.50.0-127, nên địa chỉ kế tiếp là <b>192.168.50.128</b>."},
+{"topic":"Bài tập VLSM","q":"Sau khi cấp 192.168.50.0/25, subnet /26 kế tiếp hợp lệ trong cùng /24 là gì?","o":["192.168.50.64/26","192.168.50.128/26","192.168.50.160/26","192.168.50.192/26"],"a":1,"e":"Vùng .0-.127 đã dùng. /26 có block 64 địa chỉ; block hợp lệ kế tiếp là <b>192.168.50.128/26</b>."},
+{"topic":"Bài tập VLSM","q":"Sau 192.168.50.0/25 và 192.168.50.128/26, subnet /27 kế tiếp hợp lệ là gì?","o":["192.168.50.160/27","192.168.50.192/27","192.168.50.224/27","192.168.50.128/27"],"a":1,"e":"192.168.50.128/26 dùng .128-.191. /27 kế tiếp bắt đầu tại <b>192.168.50.192</b>."},
+{"topic":"Bài tập VLSM","q":"Khối 10.0.0.0/24 cần các mạng 60 host, 30 host, 12 host, 2 host. Thứ tự cấp phát nào hợp lý nhất?","o":["2, 12, 30, 60","60, 30, 12, 2","30, 60, 2, 12","12, 2, 60, 30"],"a":1,"e":"VLSM nên cấp từ mạng cần nhiều host nhất đến ít nhất để tránh phân mảnh: <b>60, 30, 12, 2</b>."},
+{"topic":"Bài tập VLSM","q":"Mạng cần 60 host nên chọn prefix nhỏ nhất nào?","o":["/25","/26","/27","/28"],"a":1,"e":"/26 có 62 host usable, vừa đủ cho 60 host. /27 chỉ có 30 usable."},
+{"topic":"Bài tập VLSM","q":"Mạng cần 12 host nên chọn prefix nhỏ nhất nào?","o":["/28","/29","/27","/30"],"a":0,"e":"/28 có 14 host usable, đủ cho 12 host. /29 chỉ có 6 usable."},
+{"topic":"Bài tập VLSM","q":"Trong khối 10.0.0.0/24, sau khi cấp 10.0.0.0/26 cho 60 host, subnet /27 tiếp theo là gì?","o":["10.0.0.32/27","10.0.0.64/27","10.0.0.96/27","10.0.0.128/27"],"a":1,"e":"10.0.0.0/26 dùng .0-.63. /27 kế tiếp bắt đầu tại <b>10.0.0.64</b>."},
+{"topic":"Bài tập VLSM","q":"Sau 10.0.0.0/26 và 10.0.0.64/27, subnet /28 kế tiếp là gì?","o":["10.0.0.80/28","10.0.0.96/28","10.0.0.112/28","10.0.0.128/28"],"a":1,"e":"10.0.0.64/27 dùng .64-.95, nên /28 kế tiếp bắt đầu tại <b>10.0.0.96</b>."},
+{"topic":"Bài tập VLSM","q":"Sau 10.0.0.0/26, 10.0.0.64/27 và 10.0.0.96/28, subnet /30 kế tiếp là gì?","o":["10.0.0.100/30","10.0.0.108/30","10.0.0.112/30","10.0.0.128/30"],"a":2,"e":"10.0.0.96/28 dùng .96-.111, block /30 kế tiếp bắt đầu ở <b>10.0.0.112</b>."},
+{"topic":"Bài tập VLSM","q":"Một bảng VLSM cấp 192.168.1.0/26 và 192.168.1.32/27 cùng lúc. Vấn đề là gì?","o":["Hai subnet bị overlap","Hai subnet khác VLAN nên luôn đúng","/27 không tồn tại","/26 không có host usable"],"a":0,"e":"192.168.1.0/26 bao phủ .0-.63, còn 192.168.1.32/27 bao phủ .32-.63, nên <b>overlap</b>."},
+{"topic":"Bài tập VLSM","q":"Subnet summary nhỏ nhất bao phủ 192.168.4.0/24, 192.168.5.0/24, 192.168.6.0/24 và 192.168.7.0/24 là gì?","o":["192.168.4.0/22","192.168.4.0/23","192.168.0.0/21","192.168.6.0/23"],"a":0,"e":"Bốn mạng /24 liên tiếp từ 4 đến 7 khớp thành block 4 mạng, summary là <b>192.168.4.0/22</b>."},
+{"topic":"Bài tập VLSM","q":"Summary nhỏ nhất bao phủ 10.0.8.0/24 và 10.0.9.0/24 là gì?","o":["10.0.8.0/23","10.0.8.0/22","10.0.9.0/23","10.0.0.0/16"],"a":0,"e":"Hai mạng /24 liên tiếp 8 và 9 tạo thành block /23 bắt đầu tại số chẵn 8: <b>10.0.8.0/23</b>."},
+{"topic":"Bài tập VLSM","q":"Summary 172.16.8.0/21 bao phủ dải mạng /24 nào?","o":["172.16.8.0 đến 172.16.15.0","172.16.8.0 đến 172.16.11.0","172.16.0.0 đến 172.16.7.0","172.16.16.0 đến 172.16.23.0"],"a":0,"e":"/21 có bước nhảy 8 ở octet thứ ba, nên 172.16.8.0/21 bao phủ các /24 từ <b>8 đến 15</b>."},
+{"topic":"Bài tập VLSM","q":"Nếu summary route quá rộng, rủi ro chính là gì?","o":["Có thể hút lưu lượng đến mạng không thật sự tồn tại","Luôn tăng băng thông vật lý","Xóa bảng MAC của switch","Tắt DHCP server"],"a":0,"e":"Summary quá rộng có thể tạo route tới các prefix chưa có thật, gây blackhole hoặc định tuyến sai."},
+{"topic":"Bài tập VLSM","q":"Muốn kiểm tra hai subnet VLSM có overlap hay không, thông tin nào quan trọng nhất?","o":["Network và prefix của từng subnet","Tên VLAN native","Router hostname","Cổng console"],"a":0,"e":"Cần tính phạm vi địa chỉ từ <b>network/prefix</b> để xem các dải có giao nhau không."},
+{"topic":"Bài tập VLSM","q":"Trong VLSM, prefix càng lớn như /29 so với /24 thì subnet thường như thế nào?","o":["Nhỏ hơn, ít host hơn","Lớn hơn, nhiều host hơn","Không có broadcast","Không có network address"],"a":0,"e":"Prefix dài hơn để lại ít bit host hơn, nên subnet <b>nhỏ hơn và ít host hơn</b>."},
+{"topic":"Bài tập VLSM","q":"Một mạng cần 500 host usable. Prefix nhỏ nhất phù hợp là gì?","o":["/22","/23","/24","/25"],"a":1,"e":"/23 có 512 địa chỉ, 510 usable, đủ cho 500 host. /24 chỉ có 254 usable."},
+{"topic":"Bài tập VLSM","q":"Một mạng cần 1000 host usable. Prefix nhỏ nhất phù hợp là gì?","o":["/21","/22","/23","/24"],"a":1,"e":"/22 còn 10 bit host, có 1022 usable. /23 chỉ có 510 usable."},
+{"topic":"Bài tập VLSM","q":"Khối 192.168.0.0/23 có thể chia thành bao nhiêu subnet /26?","o":["4","6","8","16"],"a":2,"e":"/23 sang /26 mượn thêm 3 bit, tạo 2^3 = <b>8 subnet</b>."},
+{"topic":"Bài tập định tuyến","q":"Router có route 10.0.0.0/8 qua R1 và 10.1.0.0/16 qua R2. Gói đến 10.1.2.3 đi qua đâu?","o":["R1","R2","Default route","Bị drop"],"a":1,"e":"Cả hai route đều khớp, nhưng /16 cụ thể hơn /8, nên chọn route qua <b>R2</b>."},
+{"topic":"Bài tập định tuyến","q":"Router có default route và route 172.16.20.0/24. Gói đến 172.16.20.55 dùng route nào?","o":["Default route","172.16.20.0/24","Route có AD cao hơn","Không route nào"],"a":1,"e":"Longest prefix match ưu tiên route cụ thể hơn default /0, nên dùng <b>172.16.20.0/24</b>."},
+{"topic":"Bài tập định tuyến","q":"Router có hai route cùng prefix 192.168.1.0/24: static AD 1 và OSPF AD 110. Route nào được cài?","o":["OSPF","Static","Cả hai luôn load-balance","Default route"],"a":1,"e":"Khi prefix giống nhau, router so AD. AD thấp hơn thắng, nên route <b>static AD 1</b> được cài."},
+{"topic":"Bài tập định tuyến","q":"Muốn static route dự phòng cho OSPF, nên đặt AD static như thế nào?","o":["Nhỏ hơn 110","Bằng 110","Lớn hơn 110","Luôn bằng 1"],"a":2,"e":"Floating static phải có AD <b>lớn hơn</b> route chính OSPF để chỉ xuất hiện khi OSPF mất."},
+{"topic":"Bài tập định tuyến","q":"Lệnh `ip route 0.0.0.0 0.0.0.0 203.0.113.1` tạo route gì?","o":["Default static route","Connected route","OSPF route","Host route /32"],"a":0,"e":"Đích 0.0.0.0 mask 0.0.0.0 là <b>default route</b>, dùng khi không có route cụ thể hơn."},
+{"topic":"Bài tập định tuyến","q":"Lệnh `ipv6 route ::/0 2001:db8:1::1` tạo route gì?","o":["IPv6 default route","IPv4 default route","OSPFv2 route","Route link-local bắt buộc"],"a":0,"e":"Prefix <b>::/0</b> là default route trong IPv6."},
+{"topic":"Bài tập định tuyến","q":"Một router nhận gói đến 192.0.2.10 nhưng không có route cụ thể và không có default route. Router sẽ làm gì?","o":["Drop gói","Broadcast gói ra tất cả interface","Tự tạo route","Chuyển qua DHCP"],"a":0,"e":"Nếu không có route khớp và không có default route, router sẽ <b>loại bỏ gói</b>."},
+{"topic":"Bài tập định tuyến","q":"Trên Ethernet, static route chỉ dùng exit interface như `ip route 10.2.0.0 255.255.0.0 g0/0` có thể gây gì?","o":["Router phải ARP cho nhiều đích","Tự bật OSPF","Tắt interface","Xóa VLAN"],"a":0,"e":"Trên multi-access Ethernet, chỉ định exit interface có thể khiến router phải phân giải ARP cho nhiều địa chỉ đích, tăng xử lý."},
+{"topic":"Bài tập định tuyến","q":"Muốn route đến một host duy nhất 192.168.5.10, prefix nên dùng là gì?","o":["/24","/25","/30","/32"],"a":3,"e":"Host route dùng prefix <b>/32</b> để khớp đúng một địa chỉ IPv4."},
+{"topic":"Bài tập định tuyến","q":"Một PC 192.168.1.10/24 gửi đến 192.168.1.50. PC sẽ gửi frame đến MAC nào?","o":["MAC của 192.168.1.50","MAC của default gateway","MAC broadcast luôn","MAC của DNS server"],"a":0,"e":"Hai IP cùng subnet /24 nên PC ARP lấy <b>MAC của host đích</b>, không gửi qua gateway."},
+{"topic":"Bài tập định tuyến","q":"PC 192.168.1.10/24 gửi đến 8.8.8.8. MAC đích trong frame đầu tiên là gì?","o":["MAC của 8.8.8.8","MAC của default gateway","MAC của switch","MAC của DHCP server"],"a":1,"e":"Đích ngoài subnet nên host gửi frame đến <b>MAC của default gateway</b>."},
+{"topic":"Bài tập định tuyến","q":"Nếu PC cấu hình default gateway sai nhưng vẫn cùng IP/mask đúng, triệu chứng thường là gì?","o":["Liên lạc cùng subnet được, ra mạng khác lỗi","Không ping được chính nó","Switch mất bảng MAC","DHCP server tắt"],"a":0,"e":"Gateway chỉ cần cho lưu lượng ra ngoài subnet. Host vẫn có thể giao tiếp cùng subnet nhưng sẽ lỗi khi đi mạng khác."},
+{"topic":"Bài tập định tuyến","q":"Một route có ký hiệu `C` trong bảng định tuyến Cisco nghĩa là gì?","o":["Connected trực tiếp","Static route","OSPF route","Default route"],"a":0,"e":"Ký hiệu <b>C</b> là mạng connected trực tiếp trên interface router."},
+{"topic":"Bài tập định tuyến","q":"Một route có ký hiệu `L` trong bảng định tuyến Cisco thường là gì?","o":["Local host route của IP interface","Link-state OSPF route","Static route","Loop prevention route"],"a":0,"e":"Ký hiệu <b>L</b> là local route /32 đại diện cho chính địa chỉ IP của interface."},
+{"topic":"Bài tập định tuyến","q":"Nếu interface router `administratively down`, connected route của mạng đó sẽ thế nào?","o":["Không còn trong bảng định tuyến","Luôn thành static route","Tự chuyển sang OSPF","Vẫn forwarding bình thường"],"a":0,"e":"Interface down thì mạng connected tương ứng không còn active trong bảng định tuyến."},
+{"topic":"Bài tập định tuyến","q":"Hai static route cùng prefix, cùng AD, cùng metric nhưng next-hop khác nhau có thể tạo gì?","o":["Load balancing ngang giá","STP loop","DHCP relay","Native VLAN mismatch"],"a":0,"e":"Cisco có thể cài nhiều route ngang giá để <b>ECMP/load balancing</b> nếu điều kiện phù hợp."},
+{"topic":"Bài tập định tuyến","q":"Metric của OSPF được gọi là gì?","o":["Cost","Hop count","Bandwidth delay reliability","Administrative distance"],"a":0,"e":"OSPF chọn đường dựa trên <b>cost</b>, thường tính từ bandwidth interface."},
+{"topic":"Bài tập định tuyến","q":"RIP chủ yếu dùng metric nào?","o":["Hop count","Cost","Delay","Bandwidth cộng dồn"],"a":0,"e":"RIP dùng <b>hop count</b>, tối đa 15 hop usable; 16 được xem là unreachable."},
+{"topic":"Bài tập định tuyến","q":"EIGRP cổ điển thường dùng các thành phần nào mặc định trong metric?","o":["Bandwidth và delay","Hop count và cost","MAC và VLAN","DNS và DHCP"],"a":0,"e":"EIGRP mặc định dùng <b>bandwidth và delay</b> để tính composite metric."},
+{"topic":"Bài tập định tuyến","q":"Route summary giúp ích gì cho bảng định tuyến?","o":["Giảm số lượng route phải quảng bá/lưu trữ","Tăng số cổng switch","Tắt NAT","Xóa default route"],"a":0,"e":"Summary gom nhiều prefix liên tiếp thành một route lớn hơn, giúp bảng định tuyến gọn hơn và giảm quảng bá."},
+{"topic":"Bài tập định tuyến","q":"Một summary route không có route con thật ở phía sau có thể gây hiện tượng gì?","o":["Blackhole lưu lượng","Tự bật PortFast","Cấp DHCP sai","Đổi MAC address"],"a":0,"e":"Nếu summary hút lưu lượng đến prefix không tồn tại phía sau, gói có thể bị <b>blackhole</b>."},
+{"topic":"Bài tập ACL/NAT","q":"ACL chuẩn `access-list 10 deny 192.168.1.0 0.0.0.255` thiếu dòng permit phía sau sẽ gây gì?","o":["Chặn luôn các nguồn khác do implicit deny","Tự permit mọi thứ","Chỉ chặn TCP 80","Không có tác dụng"],"a":0,"e":"ACL có implicit deny ở cuối. Nếu chỉ có deny mà không có permit, các gói còn lại cũng bị chặn."},
+{"topic":"Bài tập ACL/NAT","q":"Muốn ACL chuẩn cho phép mạng 192.168.10.0/24, dòng nào đúng?","o":["permit 192.168.10.0 0.0.0.255","permit 192.168.10.0 255.255.255.0","permit host 192.168.10.0","permit any 192.168.10.0"],"a":0,"e":"ACL Cisco dùng wildcard mask. /24 tương ứng wildcard <b>0.0.0.255</b>."},
+{"topic":"Bài tập ACL/NAT","q":"Muốn extended ACL chặn PC 192.168.1.10 truy cập HTTP server 10.10.10.20, ACE nào hợp lý?","o":["deny tcp host 192.168.1.10 host 10.10.10.20 eq 80","deny ip host 10.10.10.20 host 192.168.1.10 eq 80","deny udp host 192.168.1.10 host 10.10.10.20 eq 80","deny tcp any host 192.168.1.10 eq 80"],"a":0,"e":"HTTP dùng TCP port 80; nguồn là host 192.168.1.10, đích là host 10.10.10.20."},
+{"topic":"Bài tập ACL/NAT","q":"Sau dòng `deny tcp host 192.168.1.10 host 10.10.10.20 eq 80`, muốn cho phép lưu lượng khác, cần thêm gì?","o":["permit ip any any","deny ip any any","permit tcp any any eq 80 duy nhất","Không cần vì ACL tự permit"],"a":0,"e":"Do implicit deny, cần thêm <b>permit ip any any</b> nếu muốn cho phép phần còn lại."},
+{"topic":"Bài tập ACL/NAT","q":"ACL inbound trên interface LAN sẽ lọc gói theo hướng nào?","o":["Gói đi từ LAN vào router","Gói từ router đi ra LAN","Chỉ gói broadcast","Chỉ gói DHCP"],"a":0,"e":"Inbound xét theo chiều gói <b>đi vào interface router</b>. Interface LAN inbound thường là lưu lượng từ LAN vào router."},
+{"topic":"Bài tập ACL/NAT","q":"ACL outbound trên interface WAN thường lọc gói ở thời điểm nào?","o":["Trước khi gói rời WAN","Trước khi vào router từ LAN","Trước khi PC đóng frame","Khi DHCP cấp lease"],"a":0,"e":"Outbound được kiểm tra <b>trước khi gói rời interface ra</b>, sau khi router đã chọn interface ra."},
+{"topic":"Bài tập ACL/NAT","q":"Trong NAT overload, ACL dùng `permit 192.168.1.0 0.0.0.255` có ý nghĩa gì?","o":["Chọn mạng nội bộ được NAT","Chặn mạng đó khỏi Internet","Chọn DNS server","Chọn cổng outside"],"a":0,"e":"ACL trong NAT overload thường dùng để match các địa chỉ inside local được phép dịch NAT."},
+{"topic":"Bài tập ACL/NAT","q":"Cấu hình PAT thường dùng từ khóa nào trong lệnh `ip nat inside source list ... interface ...`?","o":["overload","passive","native","sticky"],"a":0,"e":"Từ khóa <b>overload</b> bật PAT, cho nhiều host dùng chung IP public/interface bằng số port."},
+{"topic":"Bài tập ACL/NAT","q":"Nếu NAT inside/outside bị cấu hình ngược, hậu quả thường là gì?","o":["NAT không dịch đúng lưu lượng","STP đổi root","VLAN tự tạo","DHCP lease dài hơn"],"a":0,"e":"NAT cần biết phía inside và outside. Đánh dấu ngược sẽ làm quá trình dịch không hoạt động như mong muốn."},
+{"topic":"Bài tập ACL/NAT","q":"Muốn publish web server nội bộ 192.168.1.100 ra public IP cố định, loại NAT nào phù hợp nhất?","o":["Static NAT","PAT overload duy nhất","DHCP relay","PortFast"],"a":0,"e":"<b>Static NAT</b> ánh xạ cố định một địa chỉ private với một địa chỉ public."},
+{"topic":"Bài tập ACL/NAT","q":"Static NAT 1:1 khác PAT overload ở điểm nào?","o":["Static NAT ánh xạ cố định một-một, PAT cho nhiều host dùng chung IP qua port","Static NAT chỉ dùng với IPv6","PAT không dùng port","Static NAT bắt buộc dùng DHCP"],"a":0,"e":"Static NAT là ánh xạ 1:1; PAT overload phân biệt nhiều kết nối bằng số port."},
+{"topic":"Bài tập ACL/NAT","q":"Lệnh nào giúp xóa bảng NAT translation động trên Cisco IOS khi cần test lại?","o":["clear ip nat translation *","erase startup-config","clear vlan all","reload nat only"],"a":0,"e":"Lệnh <b>clear ip nat translation *</b> xóa các bản dịch NAT động hiện có."},
+{"topic":"Bài tập ACL/NAT","q":"Nếu `show ip nat translations` trống trong khi client đang truy cập Internet, nên kiểm tra gì trước?","o":["ACL NAT, inside/outside và default route","Bridge priority","Native VLAN name","OSPF router-id của PC"],"a":0,"e":"Không thấy translation thường do lưu lượng chưa match ACL NAT, sai inside/outside, hoặc routing ra ngoài có vấn đề."},
+{"topic":"Bài tập ACL/NAT","q":"Extended ACL nên đặt gần nguồn vì lý do chính nào?","o":["Chặn lưu lượng không mong muốn sớm và tiết kiệm băng thông","Vì nó chỉ biết IP nguồn","Vì router bắt buộc như vậy","Để xóa implicit deny"],"a":0,"e":"Extended ACL lọc được nguồn/đích/port nên có thể loại bỏ lưu lượng không mong muốn ngay gần nguồn."},
+{"topic":"Bài tập ACL/NAT","q":"Standard ACL nên đặt gần đích vì lý do chính nào?","o":["Nó chỉ lọc theo nguồn nên đặt gần nguồn dễ chặn nhầm nhiều đích","Nó lọc theo port nên cần gần server","Nó chỉ chạy ở switch Layer 2","Nó không có implicit deny"],"a":0,"e":"Standard ACL chỉ biết nguồn. Đặt gần nguồn có thể chặn nguồn đó tới mọi đích, nên thường đặt gần đích cần bảo vệ."},
+{"topic":"Bài tập ACL/NAT","q":"Dòng `permit tcp any host 10.1.1.10 eq 443` cho phép lưu lượng gì?","o":["HTTPS đến server 10.1.1.10","DNS đến server 10.1.1.10","SSH từ server 10.1.1.10","ICMP đến mọi host"],"a":0,"e":"TCP port 443 là HTTPS, đích là host 10.1.1.10."},
+{"topic":"Bài tập ACL/NAT","q":"Dòng `deny icmp any any echo` thường chặn loại gói nào?","o":["ICMP echo request/ping","HTTP GET","DHCP offer","OSPF Hello"],"a":0,"e":"ICMP echo là gói request dùng bởi ping. Dòng này chặn yêu cầu ping."},
+{"topic":"Bài tập ACL/NAT","q":"Nếu áp ACL sai chiều trên interface, điều gì có thể xảy ra?","o":["ACL không lọc đúng lưu lượng mong muốn","Router tự sửa chiều ACL","VLAN bị đổi ID","NAT luôn hoạt động tốt hơn"],"a":0,"e":"ACL chỉ kiểm tra theo chiều inbound/outbound đã áp. Sai chiều khiến rule không tác động đúng luồng gói."},
+{"topic":"Bài tập ACL/NAT","q":"Port security sticky MAC có tác dụng gì?","o":["Học MAC động rồi ghi vào running-config như MAC an toàn","Bật trunk tự động","Dịch NAT theo port","Cấp IP qua DHCP"],"a":0,"e":"Sticky MAC cho phép switch học MAC trên cổng và thêm vào cấu hình port-security secure MAC."},
+{"topic":"Bài tập ACL/NAT","q":"Port-security maximum 2 nghĩa là gì?","o":["Tối đa 2 MAC secure được phép trên cổng","Tối đa 2 VLAN trên trunk","Tối đa 2 DHCP server","Tối đa 2 route static"],"a":0,"e":"`switchport port-security maximum 2` giới hạn số MAC secure trên cổng là <b>2</b>."},
+{"topic":"Bài tập OSPF","q":"Hai router OSPF cùng link nhưng một bên area 0, bên kia area 1. Kết quả thường là gì?","o":["Không hình thành neighbor ổn định","Tự đổi về area 0","Vẫn full bình thường","Chỉ NAT bị lỗi"],"a":0,"e":"OSPF neighbor trên cùng link cần khớp <b>Area ID</b>. Khác area thường không lên adjacency."},
+{"topic":"Bài tập OSPF","q":"Hai router OSPF có hello/dead interval khác nhau. Hiện tượng thường là gì?","o":["Không hình thành neighbor","Tự chuyển sang EIGRP","Chỉ mất DHCP","Vẫn full nếu cùng router-id"],"a":0,"e":"Hello/dead interval phải khớp để OSPF neighbor hình thành ổn định."},
+{"topic":"Bài tập OSPF","q":"Hai router OSPF có cùng router ID. Vấn đề có thể xảy ra là gì?","o":["Neighbor hoặc route không ổn định/lỗi","Tăng tốc hội tụ","Tự tạo DR thứ hai","Không ảnh hưởng gì trong mọi trường hợp"],"a":0,"e":"Router ID phải duy nhất trong OSPF domain. Trùng RID có thể gây lỗi neighbor hoặc route."},
+{"topic":"Bài tập OSPF","q":"Trên mạng broadcast Ethernet, router OSPF priority 0 có ý nghĩa gì?","o":["Không được bầu DR/BDR","Luôn là DR","Luôn là BDR","Không gửi Hello"],"a":0,"e":"Priority 0 làm router không tham gia bầu chọn <b>DR/BDR</b>, nhưng vẫn có thể tạo neighbor."},
+{"topic":"Bài tập OSPF","q":"Nếu muốn một router có khả năng thắng bầu DR cao hơn, nên chỉnh gì?","o":["Tăng OSPF priority","Giảm bandwidth","Tắt hello","Đổi subnet mask thành /32"],"a":0,"e":"Trên broadcast/NBMA, priority cao hơn được ưu tiên làm DR; nếu hòa mới xét router ID."},
+{"topic":"Bài tập OSPF","q":"OSPF neighbor ở trạng thái EXSTART/EXCHANGE lâu bất thường có thể do nguyên nhân nào đáng nghi?","o":["MTU mismatch","Sai DNS","DHCP hết lease","Sai native VLAN trên trunk duy nhất"],"a":0,"e":"MTU mismatch là nguyên nhân phổ biến khiến OSPF kẹt ở EXSTART/EXCHANGE."},
+{"topic":"Bài tập OSPF","q":"Lệnh nào xem trạng thái neighbor OSPF trên Cisco IOS?","o":["show ip ospf neighbor","show vlan brief","show ip nat translations","show access-lists"],"a":0,"e":"<b>show ip ospf neighbor</b> hiển thị láng giềng OSPF và trạng thái adjacency."},
+{"topic":"Bài tập OSPF","q":"Lệnh nào xem các interface đang chạy OSPF và timer/cost liên quan?","o":["show ip ospf interface","show interfaces trunk","show mac address-table","show cdp traffic"],"a":0,"e":"<b>show ip ospf interface</b> cho biết area, cost, network type, timers và trạng thái OSPF trên interface."},
+{"topic":"Bài tập OSPF","q":"Wildcard nào dùng để match chính xác host/interface 10.1.1.1 trong lệnh network OSPF?","o":["0.0.0.0","0.0.0.255","255.255.255.255","0.0.255.255"],"a":0,"e":"Wildcard <b>0.0.0.0</b> nghĩa là tất cả bit phải khớp, tức đúng một địa chỉ."},
+{"topic":"Bài tập OSPF","q":"Lệnh `network 10.1.0.0 0.0.255.255 area 0` match phạm vi nào?","o":["10.1.0.0/16","10.1.0.0/24","10.0.0.0/8","Chỉ host 10.1.0.0"],"a":0,"e":"Wildcard 0.0.255.255 tương ứng mask 255.255.0.0, tức <b>10.1.0.0/16</b>."},
+{"topic":"Bài tập OSPF","q":"OSPF passive-interface trên LAN người dùng có lợi ích gì?","o":["Không gửi Hello ra LAN nhưng vẫn quảng bá mạng LAN","Tắt luôn route LAN","Chặn DHCP","Đổi VLAN native"],"a":0,"e":"Passive-interface giảm Hello không cần thiết và tránh hình thành neighbor ngoài ý muốn, nhưng network vẫn được quảng bá."},
+{"topic":"Bài tập OSPF","q":"Muốn quảng bá default route vào OSPF khi router đã có default route, dùng lệnh nào?","o":["default-information originate","redistribute connected always","ip route ospf default","network 0.0.0.0 area 0"],"a":0,"e":"Trong OSPF, lệnh <b>default-information originate</b> quảng bá default route vào OSPF khi router có default route."},
+{"topic":"Bài tập OSPF","q":"OSPF cost mặc định giảm khi yếu tố nào tăng?","o":["Bandwidth interface","Router hostname","Số VLAN","DHCP lease time"],"a":0,"e":"Cost OSPF mặc định tỷ lệ nghịch với bandwidth. Bandwidth cao hơn thường có cost thấp hơn."},
+{"topic":"Bài tập OSPF","q":"Nếu hai đường OSPF đến cùng prefix có cost bằng nhau, router có thể làm gì?","o":["Cài nhiều route equal-cost để load balancing","Chỉ chọn route có IP gateway lớn hơn","Drop toàn bộ gói","Tắt OSPF"],"a":0,"e":"OSPF hỗ trợ ECMP, có thể cài nhiều route có cost bằng nhau nếu cấu hình cho phép."},
+{"topic":"Bài tập OSPF","q":"Trong OSPF đa area, mọi area thông thường nên kết nối logic về area nào?","o":["Area 0","Area 1","Area 255","Native area"],"a":0,"e":"Area 0 là backbone area; các area thông thường cần kết nối logic về <b>area 0</b>."},
+{"topic":"Bài tập OSPF","q":"Route O IA trong bảng định tuyến nghĩa là gì?","o":["OSPF inter-area","OSPF intra-area","OSPF external type 2","Static route"],"a":0,"e":"Ký hiệu <b>O IA</b> là route OSPF học từ area khác, tức inter-area route."},
+{"topic":"Bài tập OSPF","q":"Route O E2 trong bảng định tuyến Cisco thường là gì?","o":["OSPF external type 2","OSPF inter-area","Connected route","Local route"],"a":0,"e":"<b>O E2</b> là route external type 2 được redistribute vào OSPF."},
+{"topic":"Bài tập OSPF","q":"Nếu một interface không nằm trong bất kỳ câu lệnh network OSPF nào và không bật OSPF trực tiếp, điều gì xảy ra?","o":["Interface đó không chạy OSPF","Interface tự chạy area 0","Interface chỉ gửi DBD","Interface thành DR"],"a":0,"e":"OSPF chỉ chạy trên interface được match bởi network statement hoặc được bật trực tiếp bằng cấu hình interface."},
+{"topic":"Bài tập OSPF","q":"Để router ID mới cấu hình có hiệu lực trên router đang chạy OSPF, thao tác thường cần là gì?","o":["clear ip ospf process hoặc reload","Xóa VLAN 1","Đổi DNS","Tắt DHCP snooping"],"a":0,"e":"Router ID OSPF thường chỉ đổi sau khi restart tiến trình OSPF hoặc reload router."},
+
+];
+
+Q.forEach((item,i)=>{ if(!item.topic) item.topic = topicOf(i); });
+const TOTAL=Q.length;
+document.querySelector('#total-title').textContent=TOTAL;
+shuffleChoices();
+
+const KEY=['A','B','C','D'];
+let cur=0;
+const answers=new Array(Q.length).fill(null); // null=chưa làm, ngược lại lưu index đã chọn
+
+const $=s=>document.querySelector(s);
+const card=$('#card'), navgrid=$('#navgrid');
+
+// build navigator
+Q.forEach((_,i)=>{
+  const b=document.createElement('button');
+  b.textContent=i+1;
+  b.onclick=()=>{cur=i;render();const d=document.querySelector('details.navwrap');};
+  navgrid.appendChild(b);
+});
+
+function updateScore(){
+  const done=answers.filter(a=>a!==null).length;
+  const ok=answers.filter((a,i)=>a!==null&&a===Q[i].a).length;
+  const no=done-ok;
+  $('#s-done').innerHTML=done+`<span style="color:var(--faint);font-size:13px">/${TOTAL}</span>`;
+  $('#s-ok').textContent=ok;
+  $('#s-no').textContent=no;
+  $('#s-acc').textContent=done? Math.round(ok/done*100)+'%' : '—';
+  $('#prog').style.width=(done/Q.length*100)+'%';
+  // navigator colors
+  navgrid.querySelectorAll('button').forEach((b,i)=>{
+    b.classList.remove('ok','no','cur');
+    if(answers[i]!==null) b.classList.add(answers[i]===Q[i].a?'ok':'no');
+    if(i===cur) b.classList.add('cur');
+  });
+  $('#navlabel').textContent = done? `Bảng câu hỏi · đã làm ${done}/${TOTAL}` : 'Mở bảng câu hỏi (nhảy nhanh)';
+}
+
+function render(){
+  const item=Q[cur];
+  const chosen=answers[cur];
+  const answered=chosen!==null;
+  let html=`<div class="qhead"><span class="qnum">Câu ${cur+1}</span><span class="topic">${item.topic || topicOf(cur)}</span></div>`;
+  html+=`<div class="qtext">${item.q}</div>`;
+  item.o.forEach((opt,i)=>{
+    let cls='opt';let mark='';
+    if(answered){
+      if(i===item.a){cls+=' is-correct';mark='✓';}
+      else if(i===chosen){cls+=' is-wrong';mark='✗';}
+    }
+    html+=`<button class="${cls}" ${answered?'disabled':''} data-i="${i}">
+      <span class="key">${KEY[i]}</span><span>${opt}</span><span class="mark">${mark}</span></button>`;
+  });
+  if(answered){
+    const right=chosen===item.a;
+    html+=`<div class="explain show ${right?'v-ok':'v-no'}">
+      <div class="verdict">${right?'✓ Chính xác':'✗ Chưa đúng — đáp án: '+KEY[item.a]}</div>
+      <div>${item.e}</div></div>`;
+  }
+  card.innerHTML=html;
+  if(!answered){
+    card.querySelectorAll('.opt').forEach(b=>{
+      b.onclick=()=>{
+        const picked=+b.dataset.i;
+        answers[cur]=picked;
+        if(picked===item.a) celebrate();
+        render();
+        updateScore();
+      };
+    });
+  }
+  $('#prev').disabled=cur===0;
+  $('#next').textContent = cur===Q.length-1 ? 'Hết câu' : 'Tiếp →';
+  $('#next').disabled=cur===Q.length-1;
+  updateScore();
+  card.scrollIntoView({block:'nearest'});
+}
+
+$('#prev').onclick=()=>{if(cur>0){cur--;render();}};
+$('#next').onclick=()=>{if(cur<Q.length-1){cur++;render();}};
+
+$('#jumpWrong').onclick=()=>{
+  for(let k=1;k<=Q.length;k++){const i=(cur+k)%Q.length;
+    if(answers[i]!==null&&answers[i]!==Q[i].a){cur=i;render();return;}}
+  flash('#jumpWrong','Không có câu sai 🎉');
+};
+$('#jumpUnans').onclick=()=>{
+  for(let k=1;k<=Q.length;k++){const i=(cur+k)%Q.length;
+    if(answers[i]===null){cur=i;render();return;}}
+  flash('#jumpUnans','Đã làm hết ✓');
+};
+$('#reset').onclick=()=>{
+  shuffleQuestions();
+  shuffleChoices();
+  answers.fill(null);
+  cur=0;
+  render();
+  flash('#reset','Đã xáo câu mới ✓');
+};
+function flash(sel,msg){const b=$(sel);const t=b.textContent;b.textContent=msg;setTimeout(()=>b.textContent=t,1400);}
+function shuffleQuestions(){
+  for(let i=Q.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [Q[i],Q[j]]=[Q[j],Q[i]];
+  }
+}
+function shuffleChoices(){
+  Q.forEach(item=>{
+    const choices=item.o.map((text,index)=>({text,correct:index===item.a}));
+    for(let i=choices.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [choices[i],choices[j]]=[choices[j],choices[i]];
+    }
+    item.o=choices.map(choice=>choice.text);
+    item.a=choices.findIndex(choice=>choice.correct);
+  });
+}
+
+const fxCanvas=document.querySelector('#celebration');
+const fx=fxCanvas.getContext('2d');
+let sparks=[];
+let fxRunning=false;
+function sizeFx(){
+  fxCanvas.width=window.innerWidth*devicePixelRatio;
+  fxCanvas.height=window.innerHeight*devicePixelRatio;
+  fx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+window.addEventListener('resize',sizeFx);
+sizeFx();
+function celebrate(){
+  const colors=['#f8c146','#2563eb','#d94686','#15803d','#ffffff'];
+  const originX=window.innerWidth*(.25+Math.random()*.5);
+  const originY=window.innerHeight*(.22+Math.random()*.28);
+  for(let i=0;i<70;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=2+Math.random()*5;
+    sparks.push({
+      x:originX,y:originY,
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed-1.2,
+      life:55+Math.random()*18,
+      age:0,
+      size:2+Math.random()*3,
+      color:colors[Math.floor(Math.random()*colors.length)]
+    });
+  }
+  if(!fxRunning) requestAnimationFrame(runFx);
+}
+function runFx(){
+  fxRunning=true;
+  fx.clearRect(0,0,window.innerWidth,window.innerHeight);
+  sparks=sparks.filter(p=>p.age<p.life);
+  sparks.forEach(p=>{
+    p.age++;
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vy+=.055;
+    const alpha=1-p.age/p.life;
+    fx.globalAlpha=alpha;
+    fx.fillStyle=p.color;
+    fx.beginPath();
+    fx.arc(p.x,p.y,p.size*alpha,0,Math.PI*2);
+    fx.fill();
+  });
+  fx.globalAlpha=1;
+  if(sparks.length) requestAnimationFrame(runFx);
+  else fxRunning=false;
+}
+
+render();
+</script>
+
